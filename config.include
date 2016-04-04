@@ -1,0 +1,62 @@
+[core]
+# Enable file system cache on Windows (no effect on OS X/Linux)
+# c.f. https://groups.google.com/forum/#!topic/git-for-windows/9WrSosaa4A8
+    fscache = true
+
+
+[push]
+    default = simple
+
+
+###############################################################################
+# Configure Git LFS
+# c.f. https://git-lfs.github.com/
+###############################################################################
+[lfs]
+    batch = true
+    ConcurrentTransfers = 10
+
+[filter "lfs"]
+    clean = git-lfs clean %f
+    smudge = git-lfs smudge %f
+    required = true
+
+
+###############################################################################
+# Configure push protection to public Git hosting services
+###############################################################################
+[url "/// ATTENTION ///   Are you sure you want to push to public github.com? To override this warning run: 'git adsk enable-public-push github.com"]
+    pushInsteadOf = "https://github.com"
+[url "/// ATTENTION ///   Are you sure you want to push to public github.com? To override this warning run: 'git adsk enable-public-push github.com"]
+    pushInsteadOf = "git@github.com"
+[url "/// ATTENTION ///   Are you sure you want to push to public bitbucket.org? To override this warning run: 'git adsk enable-public-push bitbucket.org"]
+    pushInsteadOf = "https://bitbucket.org"
+[url "/// ATTENTION ///   Are you sure you want to push to public bitbucket.org? To override this warning run: 'git adsk enable-public-push bitbucket.org"]
+    pushInsteadOf = "git@bitbucket.org"
+
+[alias]
+    st=status
+    br=branch
+    lol = "log --pretty=oneline --abbrev-commit --graph --decorate"
+
+
+###############################################################################
+# Enterprise Config setup command
+###############################################################################
+    adsk = "!f() { \
+        KIT_PATH=$(dirname $(git config include.path)) && \
+        COMMAND=$1 && \
+        if [ -n \"$COMMAND\" ]; then \
+            shift 1; \
+        fi && \
+        if [ -z \"$COMMAND\" ] || [ \"$COMMAND\" = \"setup\" ]; then \
+            TMP_SETUP=$(mktemp -t git-enterprise-kit.XXXXXX) && \
+            cp \"$KIT_PATH/setup.sh\" \"$TMP_SETUP\" && \
+            bash \"$TMP_SETUP\" \"$KIT_PATH\" $@ && \
+            rm \"$TMP_SETUP\"; \
+        elif [ -e \"$KIT_PATH/$COMMAND.sh\" ]; then \
+            bash \"$KIT_PATH/$COMMAND.sh\" $@; \
+        else \
+            echo \"Enterprise Config command '$COMMAND' not found.\"; \
+        fi \
+    }; f"
