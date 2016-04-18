@@ -7,7 +7,7 @@ function install_git_lfs ()
     local KIT_PATH=$1
     local VERSION=$2
 
-    local GIT_LFS_CHECKSUM=7034f7ea80fb2d12033829a8d9d1c6c4
+    local GIT_LFS_CHECKSUM=95296495a70a31dd952de15bf7102ead
     # Run this to calculate the hash for a new version:
     # export V="1.1.1"; curl --location https://github.com/github/git-lfs/releases/download/v$V/git-lfs-windows-amd64-$V.zip | md5
 

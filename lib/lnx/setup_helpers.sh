@@ -10,7 +10,7 @@ function credential_helper_parameters {
 function install_git_lfs {
     local KIT_PATH=$1
     local VERSION=$2
-    local GIT_LFS_CHECKSUM="8ae06f58d9133110e1ba7e5eddbe7058"
+    local GIT_LFS_CHECKSUM="578a3b9c44edcadc7e9e32a576910d6f"
     # Run this to calculate the hash for a new version:
     # export V="1.1.1"; curl --location https://github.com/github/git-lfs/releases/download/v$V/git-lfs-linux-amd64-$V.tar.gz | md5
 

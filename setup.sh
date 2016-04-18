@@ -12,7 +12,7 @@ KIT_REMOTE_URL="https://$GITHUB_SERVER/$KIT_ORG_REPO.git"
 KIT_CLIENT_ID='<< YOUR OAUTH CLIENT ID >>'
 KIT_CLIENT_SECRET='<< YOUR OAUTH SECRET >>'
 MINIMUM_GIT_VERSION=2.3.2
-MINIMUM_GIT_LFS_VERSION=1.1.2   # On update make sure to update $GIT_LFS_CHECKSUM in lib/*/setup_helpers.sh, too!
+MINIMUM_GIT_LFS_VERSION=1.2.0   # On update make sure to update $GIT_LFS_CHECKSUM in lib/*/setup_helpers.sh, too!
 
 
 ###############################################################################
