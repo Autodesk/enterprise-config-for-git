@@ -37,7 +37,7 @@
     pushInsteadOf = "https://gitlab.com"
 [url "/// ATTENTION ///   Are you sure you want to push to public gitlab.com? To override this warning run: 'git adsk enable-public-push gitlab.com"]
     pushInsteadOf = "git@gitlab.com"
-    
+
 [alias]
     st=status
     br=branch

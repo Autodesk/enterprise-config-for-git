@@ -119,7 +119,7 @@ if [[ -z $QUIET_INTRO ]]; then
         fi
 
         git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" \
-            -c credential.helper="!f() { cat >/dev/null; echo "username=$ADS_USER"; echo "password=$ADS_PASSWORD_OR_TOKEN"; }; f" \
+            -c credential.helper="!f() { cat >/dev/null; echo \"username=$ADS_USER\"; echo \"password=$ADS_PASSWORD_OR_TOKEN\"; }; f" \
             fetch --prune --quiet origin
 
         OLD_COMMIT=$(git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" rev-parse HEAD)
