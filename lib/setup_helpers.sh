@@ -217,6 +217,10 @@ function credential_helper_parameters () {
     : # by default credentials helper have no parameters
 }
 
+function one_ping () {
+    ping -c 1 $1
+}
+
 case $(uname -s) in
     MINGW??_NT*) . $KIT_PATH/lib/win/setup_helpers.sh;;
          Darwin) . $KIT_PATH/lib/osx/setup_helpers.sh;;

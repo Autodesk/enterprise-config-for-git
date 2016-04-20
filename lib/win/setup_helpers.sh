@@ -1,3 +1,7 @@
+function one_ping () {
+    ping -n 1 $1
+}
+
 function credential_helper () {
     echo wincred
 }

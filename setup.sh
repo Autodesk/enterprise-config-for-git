@@ -40,6 +40,16 @@ ENVIRONMENT=$2
 
 . "$KIT_PATH/lib/setup_helpers.sh"
 
+# Check availability of the GitHub Enterprise server
+if ! one_ping $GITHUB_SERVER > /dev/null 2>&1; then
+    error_exit "Cannot reach $GITHUB_SERVER! Are you connected to the company network?"
+fi
+
+# Check if we can reach the GitHub Enterprise server via HTTPS
+if ! curl $CURL_RETRY_OPTIONS --silent --fail https://$GITHUB_SERVER > /dev/null 2>&1; then
+    error_exit "Cannot connect to $GITHUB_SERVER via HTTPS!"
+fi
+
 if [[ -z $QUIET_INTRO ]]; then
     print_kit_header
 
