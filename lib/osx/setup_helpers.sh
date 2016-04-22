@@ -14,7 +14,7 @@ function _macports_has_port() {
 
 function _managerless_lfs_install() {
     local VERSION=$1
-    local GIT_LFS_CHECKSUM=0c8e772de3eda9cc60176fe3de165ee7
+    local GIT_LFS_CHECKSUM=2e43480adbd3694b756c95558ecdf5cf
     # Run this to calculate the hash for a new version:
     # export V="1.1.1"; curl --location https://github.com/github/git-lfs/releases/download/v$V/git-lfs-darwin-amd64-$V.tar.gz | md5
 
