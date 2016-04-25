@@ -194,6 +194,7 @@ function check_git_lfs () {
 
 function error_exit () {
     echo -e "\n$(tput setaf 1)###\n### ERROR\n###\n> $(tput sgr 0)$1\n" >&2
+    echo -e "$(tput setaf 1)$ERROR_HELP_MESSAGE$(tput sgr 0)\n" >&2
     exit 1
 }
 
