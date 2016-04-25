@@ -15,6 +15,7 @@ In order to use _Enterprise Config for Git_ you need to fork it to your GitHub E
 * Define the [name of the setup command](./config.include#L46) for your company
 * Set the [GitHub Enterprise server](./setup.sh#L8) (e.g. `github.mycompany.com`)
 * Set _Enterprise Config for Git_ [organization/repository of your fork](./setup.sh#L9) on your GitHub Enterprise server (e.g. `tools/enterprise-config`). Please ensure every engineer has read access.
+* Define your [contact in case of errors](./setup.sh#L16)
 * Register an [OAuth application](https://developer.github.com/v3/oauth/) on your GitHub Enterprise server and setup the _Enterprise Config for Git_ [client ID and secret](./setup.sh#L12-L13).
 * Configure your desired [company email pattern](./lib/setup_helpers.sh#L84).
 * Create a production branch based on the master branch.
