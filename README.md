@@ -6,7 +6,7 @@ _Enterprise Config for Git_ adds a new Git setup command (e.g. `git mycompany`) 
 
 _Enterprise Config for Git_ supports Windows, Mac and Linux and a great number of shells such as BASH, ZSH, DASH, cmd.exe, and PowerShell.
 
-Please find more details about _Enterprise Config for Git_ in the corresponding Git Merge 2016 talk.
+Please find more details about _Enterprise Config for Git_ in the corresponding Git Merge 2016 talk ([slides](https://speakerdeck.com/larsxschneider/git-at-scale)).
 
 
 ## Getting Started
