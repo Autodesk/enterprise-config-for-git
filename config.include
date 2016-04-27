@@ -9,6 +9,10 @@
     default = simple
 
 
+[color]
+    ui = true
+
+
 ###############################################################################
 # Configure Git LFS
 # c.f. https://git-lfs.github.com/
