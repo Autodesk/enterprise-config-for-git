@@ -2,6 +2,7 @@
     # Enable file system cache on Windows (no effect on OS X/Linux)
     # c.f. https://groups.google.com/forum/#!topic/git-for-windows/9WrSosaa4A8
     fscache = true
+    whitespace = trailing-space,space-before-tab
 
 
 [push]
