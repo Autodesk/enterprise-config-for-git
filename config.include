@@ -17,6 +17,10 @@
     renames = copies
 
 
+[help]
+    autocorrect = 1
+
+
 ###############################################################################
 # Configure Git LFS
 # c.f. https://git-lfs.github.com/
