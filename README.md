@@ -1,6 +1,6 @@
 # Enterprise Config for Git
 
-A painless Git setup with an easy way to share Git configs and scripts within a company using GitHub Enterprise.
+A painless Git setup with an easy way to share Git configs and scripts within a company using GitHub Enterprise or any similar on-premise Git hosting service.
 
 _Enterprise Config for Git_ adds a new Git setup command (e.g. `git mycompany`) to your Git config (via Git config alias) that configures a developer machine. The setup command checks the installed Git version, ensures Git LFS is installed properly, configures the user name and email based on the GitHub Enterprise profile, and configures the Git credential helper with a GitHub Enterprise token. It also adds an easy way to distribute company Git configs (e.g. [Git push protection](./config.include#L25-L35)) and Git helper scripts (e.g. [`git adsk clone`](./clone.sh)).
 
