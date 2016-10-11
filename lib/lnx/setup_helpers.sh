@@ -10,7 +10,7 @@ function credential_helper_parameters {
 function install_git_lfs {
     local KIT_PATH=$1
     local VERSION=$2
-    local GIT_LFS_CHECKSUM="578a3b9c44edcadc7e9e32a576910d6f"
+    local GIT_LFS_CHECKSUM="aba77a55638502b4d58cad5c52bfdf98"
     # Run this to calculate the hash for a new version:
     # export V="1.1.1"; curl --location https://github.com/github/git-lfs/releases/download/v$V/git-lfs-linux-amd64-$V.tar.gz | md5
 
@@ -25,21 +25,18 @@ function install_git_lfs {
         error_exit "Failed to extract the contents of Git-LFS archive ($SRC_URL)"
     fi
 
+    chmod -R 775 $EXTRACT_FOLDER
     for f in $(ls "$EXTRACT_FOLDER/"); do
-        if [[ -x "$EXTRACT_FOLDER/$f/install.sh" ]]; then
-            local PFX=$(dirname $(dirname $(which git)))
-            if ( has_command git-lfs ); then
-                # reuse existing install folder if this is an update
-                PFX=$(dirname $(dirname $(which git-lfs)))
-            fi
-            echo "Installing git-lfs to $PFX, please supply credentials if prompted."
-            if ! (cd "$EXTRACT_FOLDER/$f"; sudo PREFIX=$PFX "$EXTRACT_FOLDER/$f/install.sh"); then
-                rm -f "$DOWNLOAD_FILE"
-                rm -rf "$EXTRACT_FOLDER"
-                error_exit "Failed to execute the Git-LFS installation script"
-            fi
-            break
+        local PFX="/usr/bin"
+        if ( has_command git-lfs ); then
+            # reuse existing install folder if this is an update
+            PFX=$(dirname $(which git-lfs))
+        else
+            PFX=$(perl "$KIT_PATH/lib/lnx/find_pfx.pl")
         fi
+        chmod 755 "$EXTRACT_FOLDER/$f/git-lfs"
+        sudo cp "$EXTRACT_FOLDER/$f/git-lfs" $PFX
+        sudo chmod 755 $PFX/git-lfs
     done
 
     if [[ -e $DOWNLOAD_FILE ]]; then

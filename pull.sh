@@ -2,7 +2,7 @@
 #
 # Pull Git repositories including their submodules
 #
-# Usage: git adsk pull
+# Usage: git <KIT_ID> pull
 #
 set -e
 

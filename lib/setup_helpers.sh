@@ -1,7 +1,7 @@
 ###############################################################################
 # Utility functions
 ###############################################################################
-VERSION_PARSER='my ($version) = $_ =~ /([0-9]+([.][0-9]+)+)/; if ($version lt $min) { exit 1 };'
+VERSION_PARSER='use version; my ($version) = $_ =~ /([0-9]+([.][0-9]+)+)/; if (version->parse($version) lt version->parse($min)) { exit 1 };'
 CURL_RETRY_OPTIONS='--connect-timeout 5 --max-time 10 --retry 5 --retry-delay 0 --retry-max-time 60'
 
 function print_kit_header () {
@@ -121,7 +121,7 @@ function check_md5sum () {
     if has_command md5sum; then
         # Exit with the exit code of this command.
         md5sum --check - <<EOM > /dev/null
-$MD5 $FILEPATH
+$MD5  $FILEPATH
 EOM
     elif has_command md5; then
         # OS X doesn't ship with md5sum :-/
@@ -182,6 +182,7 @@ EOM
 
 function check_git_lfs () {
     if !(has_command git-lfs) ||
+       !(git-lfs 2>&1 | grep "git-lfs" > /dev/null) ||
        !(git-lfs version | perl -pse "$VERSION_PARSER" -- -min=$MINIMUM_GIT_LFS_VERSION > /dev/null)
     then
         if [[ $1 != no-install ]]; then
@@ -189,6 +190,39 @@ function check_git_lfs () {
         else
             git_lfs_error_exit
         fi
+    fi
+}
+
+function check_dependency () {
+    if ! which $1 > /dev/null 2>&1; then
+        error_exit "$1 not installed."
+    fi
+}
+
+function rewrite_ssh_to_https_if_required () {
+    local HOST=$1
+
+    # Check if we can access the host via SSH
+    set +e
+    ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no git@$HOST > /dev/null 2>&1
+    SSH_EXIT=$?
+    set -e
+
+    # SSH exists with "1" in case the user successfully authenticated because
+    # GitHub does not provide shell access.
+    if [[ $SSH_EXIT -ne 1 ]]; then
+        echo "Configuring HTTPS URL rewrite for $HOST..."
+        set +e
+        git config --global --remove-section url."https://$HOST/" > /dev/null 2>&1
+        set -e
+        git config --global --add url."https://$HOST/".insteadOf "ssh://git@$HOST:"
+        git config --global --add url."https://$HOST/".insteadOf "ssh://git@$HOST:/"
+        git config --global --add url."https://$HOST/".insteadOf "git@$HOST:"
+        git config --global --add url."https://$HOST/".insteadOf "git@$HOST:/"
+        git config --global --add url."https://$HOST/".pushInsteadOf "ssh://git@$HOST:"
+        git config --global --add url."https://$HOST/".pushInsteadOf "ssh://git@$HOST:/"
+        git config --global --add url."https://$HOST/".pushInsteadOf "git@$HOST:"
+        git config --global --add url."https://$HOST/".pushInsteadOf "git@$HOST:/"
     fi
 }
 
@@ -223,8 +257,8 @@ function one_ping () {
 }
 
 case $(uname -s) in
-    MINGW??_NT*) . $KIT_PATH/lib/win/setup_helpers.sh;;
-         Darwin) . $KIT_PATH/lib/osx/setup_helpers.sh;;
-          Linux) . $KIT_PATH/lib/lnx/setup_helpers.sh;;
-              *) . $KIT_PATH/lib/other/setup_helpers.sh;;
+    MINGW??_NT*) . "$KIT_PATH/lib/win/setup_helpers.sh";;
+         Darwin) . "$KIT_PATH/lib/osx/setup_helpers.sh";;
+          Linux) . "$KIT_PATH/lib/lnx/setup_helpers.sh";;
+              *) . "$KIT_PATH/lib/other/setup_helpers.sh";;
 esac

@@ -2,7 +2,7 @@
 #
 # Remove credentials stored using the credential helpers
 #
-# Usage: git adsk teardown
+# Usage: git <KIT_ID> teardown
 #
 set -e
 

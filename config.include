@@ -42,13 +42,14 @@
     st=status
     br=branch
     lol = "log --pretty=oneline --abbrev-commit --graph --decorate"
+    prlog = "log --pretty=oneline --abbrev-commit --graph --decorate --first-parent"
 
 
 ###############################################################################
 # Enterprise Config setup command
 ###############################################################################
     adsk = "!f() { \
-        KIT_PATH=$(dirname $(git config include.path)) && \
+        KIT_PATH=$(dirname \"$(git config include.path)\") && \
         COMMAND=$1 && \
         if [ -n \"$COMMAND\" ]; then \
             shift 1; \
@@ -58,6 +59,8 @@
             cp \"$KIT_PATH/setup.sh\" \"$TMP_SETUP\" && \
             bash \"$TMP_SETUP\" \"$KIT_PATH\" $@ && \
             rm \"$TMP_SETUP\"; \
+        elif [ \"$COMMAND\" = \"install\" ]; then \
+            echo \"Enterprise config already installed!\"; \
         elif [ -e \"$KIT_PATH/$COMMAND.sh\" ]; then \
             bash \"$KIT_PATH/$COMMAND.sh\" $@; \
         else \

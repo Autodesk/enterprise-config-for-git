@@ -14,7 +14,7 @@ function _macports_has_port() {
 
 function _managerless_lfs_install() {
     local VERSION=$1
-    local GIT_LFS_CHECKSUM=2e43480adbd3694b756c95558ecdf5cf
+    local GIT_LFS_CHECKSUM=06d82272deabbc0bf9642868170fa7dd
     # Run this to calculate the hash for a new version:
     # export V="1.1.1"; curl --location https://github.com/github/git-lfs/releases/download/v$V/git-lfs-darwin-amd64-$V.tar.gz | md5
 
@@ -45,7 +45,7 @@ function _managerless_lfs_install() {
                 PFX=/usr/local
             fi
             echo "Installing git-lfs to $PFX, please supply credentials if prompted."
-            if ! (cd "$EXTRACT_FOLDER/$f"; sudo PREFIX=$PFX "$EXTRACT_FOLDER/$f/install.sh"); then
+            if ! (cd "$EXTRACT_FOLDER/$f"; sudo env PREFIX=$PFX "$EXTRACT_FOLDER/$f/install.sh"); then
                 rm -f "$DOWNLOAD_FILE"
                 rm -rf "$EXTRACT_FOLDER"
                 error_exit "Failed to execute the Git-LFS installation script"
