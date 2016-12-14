@@ -8,3 +8,12 @@
 set -e
 
 git-lfs clone --recursive $@
+
+case $(uname -s) in
+    CYGWIN_NT-*|MINGW??_NT*)
+        powershell "$KIT_PATH/lib/win/sourcetree_add_commit_link_text.ps1"
+        ;;
+    Darwin)
+        "$KIT_PATH/lib/osx/sourcetree_add_commit_link_text.sh"
+        ;;
+esac
