@@ -68,9 +68,9 @@ if [[ -z $QUIET_INTRO ]]; then
 
     if [[ -z $GITHUB_TOKEN ]]; then
         if [[ -z $STORED_GITHUB_ENTERPRISE_ACCOUNT ]]; then
-            echo -n 'Please enter your Autodesk username and press [ENTER]: '
+            echo -n 'Please enter your GitHub Enterprise username and press [ENTER]: '
         else
-            echo -n "Please enter your Autodesk username and press [ENTER] (empty for \"$STORED_GITHUB_ENTERPRISE_ACCOUNT\"): "
+            echo -n "Please enter your GitHub Enterprise username and press [ENTER] (empty for \"$STORED_GITHUB_ENTERPRISE_ACCOUNT\"): "
         fi
         read ADS_USER
 

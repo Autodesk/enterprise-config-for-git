@@ -81,7 +81,7 @@ function get_ghe_email () {
     local USER=$2
     local PASSWORD="$3"
     curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" https://$HOST/api/v3/user/emails \
-        | perl -ne 'print "$1\n" if m%^\s*"email":\s*"(.*\@autodesk\.com)"[,]?$%i' \
+        | perl -ne 'print "$1\n" if m%^\s*"email":\s*"(.+\@.+)"[,]?$%i' \
         | head -n 1
 }
 
