@@ -7,7 +7,7 @@ KIT_PATH=$(dirname "$0")
 
 # Infer a github url from a remote url
 INFO_URL=${KIT_REMOTE_URL%%.git}
-INFO_URL=${INFO_URL/#git@/https:\/\/}
+INFO_URL=${INFO_URL/#git@/$GITHUB_PROTOCOL:\/\/}
 
 read -r -d '\0' HELP <<EOM
 ###

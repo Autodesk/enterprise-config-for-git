@@ -42,9 +42,9 @@ if ! one_ping $GITHUB_SERVER > /dev/null 2>&1; then
     error_exit "Cannot reach $GITHUB_SERVER! Are you connected to the company network?"
 fi
 
-# Check if we can reach the GitHub Enterprise server via HTTPS
-if ! curl $CURL_RETRY_OPTIONS --silent --fail https://$GITHUB_SERVER > /dev/null 2>&1; then
-    error_exit "Cannot connect to $GITHUB_SERVER via HTTPS!"
+# Check if we can reach the GitHub Enterprise server
+if ! curl $CURL_RETRY_OPTIONS --silent --fail $GITHUB_URL > /dev/null 2>&1; then
+    error_exit "Cannot connect to $GITHUB_SERVER via $GITHUB_PROTOCOL!"
 fi
 
 if [[ -z $QUIET_INTRO ]]; then
@@ -194,9 +194,9 @@ if [[ -z $IS_SERVICE_ACCOUNT ]]; then
         EMAIL=$(get_ghe_email $GITHUB_SERVER $ADS_USER "$ADS_PASSWORD_OR_TOKEN")
 
         if [[ -z "$NAME" ]]; then
-            error_exit "Could not retrieve your name. Please go to https://$GITHUB_SERVER/settings/profile and check your name!"
+            error_exit "Could not retrieve your name. Please go to $GITHUB_URL/settings/profile and check your name!"
         elif [[ -z "$EMAIL" ]]; then
-            error_exit "Could not retrieve your email address. Please go to https://$GITHUB_SERVER/settings/emails and check your email!"
+            error_exit "Could not retrieve your email address. Please go to $GITHUB_URL/settings/emails and check your email!"
         fi
 
         echo ''

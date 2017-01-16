@@ -9,6 +9,10 @@ KIT_ID='adsk'
 # Define your GitHub Enterprise server
 GITHUB_SERVER='git.yourcompany.com'
 
+
+# Add the protocol used to access GitHub server: http or https
+GITHUB_PROTOCOL='https'
+
 # Define the path of this repo on your GitHub Enterprise server
 KIT_ORG_REPO='yourorg/enterprise-config-for-git'
 
@@ -28,5 +32,6 @@ ERROR_HELP_MESSAGE="Please contact admin@yourcompany.com!"
 # No changes beyond this point
 ###############################################################################
 
-KIT_TESTFILE="https://$GITHUB_SERVER/raw/$KIT_ORG_REPO/master/README.md"
-KIT_REMOTE_URL="https://$GITHUB_SERVER/$KIT_ORG_REPO.git"
+GITHUB_URL="$GITHUB_PROTOCOL://$GITHUB_SERVER"
+KIT_TESTFILE="$GITHUB_URL/raw/$KIT_ORG_REPO/master/README.md"
+KIT_REMOTE_URL="$GITHUB_URL/$KIT_ORG_REPO.git"
