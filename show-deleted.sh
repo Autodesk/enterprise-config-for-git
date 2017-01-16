@@ -14,11 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+KIT_PATH=$(dirname "$0")
+. "$KIT_PATH/enterprise.constants"
 
 usage()
 {
     cat << EOM
-Usage: git adsk show-deleted [-h] [path]
+Usage: git $KIT_ID show-deleted [-h] [path]
 
 A utility to list the files that have been deleted from the current
 branch.

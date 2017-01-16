@@ -62,8 +62,8 @@ if [[ -z $QUIET_INTRO ]]; then
     # GITHUB_TOKEN=01234567890abcdef01234567890abcdef012345 git adsk
     #
     set +e
-    STORED_GITHUB_ENTERPRISE_ACCOUNT=$(git config --global adsk.github.account)
-    STORED_GITHUB_ENTERPRISE_SERVER=$(git config --global adsk.github.server)
+    STORED_GITHUB_ENTERPRISE_ACCOUNT=$(git config --global $KIT_ID.github.account)
+    STORED_GITHUB_ENTERPRISE_SERVER=$(git config --global $KIT_ID.github.server)
     set -e
 
     if [[ -z $GITHUB_TOKEN ]]; then
@@ -127,7 +127,7 @@ if [[ -z $QUIET_INTRO ]]; then
     if  [[ -z $NO_UPDATE ]]; then
         CURRENT_KIT_REMOTE_URL=$(git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" config --get remote.origin.url)
         if [[ $CURRENT_KIT_REMOTE_URL != $KIT_REMOTE_URL ]]; then
-            warning "You are updating 'git adsk' from an unofficial source: $CURRENT_KIT_REMOTE_URL"
+            warning "You are updating 'git $KIT_ID' from an unofficial source: $CURRENT_KIT_REMOTE_URL"
         fi
 
         printf -v HELPER "!f() { cat >/dev/null; echo 'username=%s'; echo 'password=%s'; }; f" "$ADS_USER" "$ADS_PASSWORD_OR_TOKEN"
@@ -139,7 +139,9 @@ if [[ -z $QUIET_INTRO ]]; then
         if [[ $OLD_COMMIT != $NEW_COMMIT ]]; then
             # After syncing to remote, delegate to the new setup script
             # ... in case that changed.
-            git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" checkout --quiet -B adsk-setup && \
+			# [jokram] Why is the checkout of a new branch adsk-setup necessary? The reset --hard will overwrite it, or?
+			# Or is it just to mark that this was the previous version?
+            git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" checkout --quiet -B $KIT_ID-setup && \
             git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" reset --quiet --hard origin/$BRANCH && \
             ADS_USER=$ADS_USER ADS_PASSWORD_OR_TOKEN="$ADS_PASSWORD_OR_TOKEN" "$KIT_PATH/setup.sh" -q "$@"
             exit $?
@@ -163,8 +165,8 @@ check_git
 check_git_lfs
 
 # Setup/store credentials
-git config --global adsk.github.account $ADS_USER
-git config --global adsk.github.server "$GITHUB_SERVER"
+git config --global $KIT_ID.github.account $ADS_USER
+git config --global $KIT_ID.github.server "$GITHUB_SERVER"
 
 if ! is_ghe_token "$ADS_PASSWORD_OR_TOKEN"; then
     # Check things that require a domain password
@@ -226,23 +228,23 @@ fi
 # Setup environment
 if [[ -z "$ENVIRONMENT" ]]; then
     set +e
-    ENVIRONMENT=$(git config --global adsk.environment)
+    ENVIRONMENT=$(git config --global $KIT_ID.environment)
     set -e
 fi
 if [[ -e "$KIT_PATH/envs/$ENVIRONMENT/setup.sh" ]]; then
     echo "Configuring $ENVIRONMENT environment..."
-    git config --global adsk.environment "$ENVIRONMENT"
+    git config --global $KIT_ID.environment "$ENVIRONMENT"
     . "$KIT_PATH/envs/$ENVIRONMENT/setup.sh" "$KIT_PATH/envs/$ENVIRONMENT"
 elif [[ "$ENVIRONMENT" == "vanilla" ]]; then
     echo "Resetting environment..."
-    git config --global adsk.environment ""
+    git config --global $KIT_ID.environment ""
 elif [[ -n "$ENVIRONMENT" ]]; then
     warning "Environment \"$ENVIRONMENT\" not found!"
-    git config --global adsk.environment ""
+    git config --global $KIT_ID.environment ""
 fi
 
 GIT_TAG=$(git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" tag --points-at HEAD)
 if [[ -z "$GIT_TAG" ]]; then
     GIT_TAG="[dev build]"
 fi
-print_success "git adsk $GIT_TAG successfully configured!"
+print_success "git $KIT_ID $GIT_TAG successfully configured!"

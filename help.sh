@@ -32,8 +32,8 @@ Command:     git $KIT_ID pull
 
 # Deleted
 Description: list the files that have been deleted from the current repository
-Command:    git adsk show-deleted [-h] [<path/to/file>]
-Example:    git adsk show-deleted
+Command:    git $KIT_ID show-deleted [-h] [<path/to/file>]
+Example:    git $KIT_ID show-deleted
 
 # Help
 Description: This help page.
