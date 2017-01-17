@@ -72,36 +72,36 @@ if [[ -z $QUIET_INTRO ]]; then
         else
             echo -n "Please enter your GitHub Enterprise username and press [ENTER] (empty for \"$STORED_GITHUB_ENTERPRISE_ACCOUNT\"): "
         fi
-        read ADS_USER
+        read GHE_USER
 
-        if [[ -z $ADS_USER ]]; then
+        if [[ -z $GHE_USER ]]; then
             if [[ ! -z $STORED_GITHUB_ENTERPRISE_ACCOUNT ]]; then
-                ADS_USER=$STORED_GITHUB_ENTERPRISE_ACCOUNT
+                GHE_USER=$STORED_GITHUB_ENTERPRISE_ACCOUNT
             else
                 error_exit 'Username must not be empty!'
             fi
         fi
 
         # GitHub usernames have a "-" instead of a "_"
-        ADS_USER=${ADS_USER//_/-}
+        GHE_USER=${GHE_USER//_/-}
 
         if [ -n "$STORED_GITHUB_ENTERPRISE_SERVER" ]; then
-            ADS_PASSWORD_OR_TOKEN="$(get_credentials $STORED_GITHUB_ENTERPRISE_SERVER $ADS_USER)"
+            GHE_PASSWORD_OR_TOKEN="$(get_credentials $STORED_GITHUB_ENTERPRISE_SERVER $GHE_USER)"
         fi
     else
-        ADS_USER="token"
-        ADS_PASSWORD_OR_TOKEN=$GITHUB_TOKEN
+        GHE_USER="token"
+        GHE_PASSWORD_OR_TOKEN=$GITHUB_TOKEN
     fi
 
-    if [ -n "$ADS_PASSWORD_OR_TOKEN" ]; then
-        if has_valid_credentials $KIT_TESTFILE $ADS_USER "$ADS_PASSWORD_OR_TOKEN"; then
+    if [ -n "$GHE_PASSWORD_OR_TOKEN" ]; then
+        if has_valid_credentials $KIT_TESTFILE $GHE_USER "$GHE_PASSWORD_OR_TOKEN"; then
             echo 'Stored token is still valid. Using it ...'
         else
             echo 'Stored or cached token is invalid.'
-            read_password $GITHUB_SERVER $KIT_TESTFILE $ADS_USER ADS_PASSWORD_OR_TOKEN
+            read_password $GITHUB_SERVER $KIT_TESTFILE $GHE_USER GHE_PASSWORD_OR_TOKEN
         fi
     else
-        read_password $GITHUB_SERVER $KIT_TESTFILE $ADS_USER ADS_PASSWORD_OR_TOKEN
+        read_password $GITHUB_SERVER $KIT_TESTFILE $GHE_USER GHE_PASSWORD_OR_TOKEN
     fi
 
     #
@@ -130,7 +130,7 @@ if [[ -z $QUIET_INTRO ]]; then
             warning "You are updating 'git $KIT_ID' from an unofficial source: $CURRENT_KIT_REMOTE_URL"
         fi
 
-        printf -v HELPER "!f() { cat >/dev/null; echo 'username=%s'; echo 'password=%s'; }; f" "$ADS_USER" "$ADS_PASSWORD_OR_TOKEN"
+        printf -v HELPER "!f() { cat >/dev/null; echo 'username=%s'; echo 'password=%s'; }; f" "$GHE_USER" "$GHE_PASSWORD_OR_TOKEN"
         git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" -c credential.helper="$HELPER" fetch --prune --quiet origin
 
         OLD_COMMIT=$(git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" rev-parse HEAD)
@@ -139,11 +139,11 @@ if [[ -z $QUIET_INTRO ]]; then
         if [[ $OLD_COMMIT != $NEW_COMMIT ]]; then
             # After syncing to remote, delegate to the new setup script
             # ... in case that changed.
-			# [jokram] Why is the checkout of a new branch adsk-setup necessary? The reset --hard will overwrite it, or?
-			# Or is it just to mark that this was the previous version?
+            # [jokram] Why is the checkout of a new branch adsk-setup necessary? The reset --hard will overwrite it, or?
+            # Or is it just to mark that this was the previous version?
             git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" checkout --quiet -B $KIT_ID-setup && \
             git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" reset --quiet --hard origin/$BRANCH && \
-            ADS_USER=$ADS_USER ADS_PASSWORD_OR_TOKEN="$ADS_PASSWORD_OR_TOKEN" "$KIT_PATH/setup.sh" -q "$@"
+            GHE_USER=$GHE_USER GHE_PASSWORD_OR_TOKEN="$GHE_PASSWORD_OR_TOKEN" "$KIT_PATH/setup.sh" -q "$@"
             exit $?
         fi
     fi
@@ -154,7 +154,7 @@ case $(uname -s) in
 esac
 
 # Detect special user accounts
-case $ADS_USER in
+case $GHE_USER in
     svc-*)  IS_SERVICE_ACCOUNT=1;;
 esac
 
@@ -165,21 +165,21 @@ check_git
 check_git_lfs
 
 # Setup/store credentials
-git config --global $KIT_ID.github.account $ADS_USER
+git config --global $KIT_ID.github.account $GHE_USER
 git config --global $KIT_ID.github.server "$GITHUB_SERVER"
 
-if ! is_ghe_token "$ADS_PASSWORD_OR_TOKEN"; then
+if ! is_ghe_token "$GHE_PASSWORD_OR_TOKEN"; then
     # Check things that require a domain password
     # e.g. check signed source code policy etc.
 
     echo 'Requesting a new GitHub token for this machine...'
     git config --global credential.helper "$(credential_helper) $(credential_helper_parameters)"
-    GIT_PRODUCTION_TOKEN=$(create_ghe_token $GITHUB_SERVER $ADS_USER "$ADS_PASSWORD_OR_TOKEN" $KIT_CLIENT_ID $KIT_CLIENT_SECRET)
-    store_token $GITHUB_SERVER $ADS_USER $GIT_PRODUCTION_TOKEN
+    GIT_PRODUCTION_TOKEN=$(create_ghe_token $GITHUB_SERVER $GHE_USER "$GHE_PASSWORD_OR_TOKEN" $KIT_CLIENT_ID $KIT_CLIENT_SECRET)
+    store_token $GITHUB_SERVER $GHE_USER $GIT_PRODUCTION_TOKEN
 
 else
     echo 'Reusing existing GitHub token...'
-    store_token $GITHUB_SERVER $ADS_USER $ADS_PASSWORD_OR_TOKEN
+    store_token $GITHUB_SERVER $GHE_USER $GHE_PASSWORD_OR_TOKEN
 fi
 
 # Setup URL rewrite
@@ -187,13 +187,13 @@ rewrite_ssh_to_https_if_required $GITHUB_SERVER
 
 # Setup username and email only for actual users, no service accounts
 if [[ -z $IS_SERVICE_ACCOUNT ]]; then
-    if ! is_ghe_token "$ADS_PASSWORD_OR_TOKEN" || \
-        is_ghe_token_with_user_scope $GITHUB_SERVER $ADS_USER "$ADS_PASSWORD_OR_TOKEN"; then
+    if ! is_ghe_token "$GHE_PASSWORD_OR_TOKEN" || \
+        is_ghe_token_with_user_scope $GITHUB_SERVER $GHE_USER "$GHE_PASSWORD_OR_TOKEN"; then
 
         echo ''
-        echo "Querying information for user \"$ADS_USER\" from $GITHUB_SERVER..."
-        NAME=$(get_ghe_name $GITHUB_SERVER $ADS_USER "$ADS_PASSWORD_OR_TOKEN")
-        EMAIL=$(get_ghe_email $GITHUB_SERVER $ADS_USER "$ADS_PASSWORD_OR_TOKEN")
+        echo "Querying information for user \"$GHE_USER\" from $GITHUB_SERVER..."
+        NAME=$(get_ghe_name $GITHUB_SERVER $GHE_USER "$GHE_PASSWORD_OR_TOKEN")
+        EMAIL=$(get_ghe_email $GITHUB_SERVER $GHE_USER "$GHE_PASSWORD_OR_TOKEN")
 
         if [[ -z "$NAME" ]]; then
             error_exit "Could not retrieve your name. Please go to $GITHUB_URL/settings/profile and check your name!"
