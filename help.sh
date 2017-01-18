@@ -7,7 +7,7 @@ KIT_PATH=$(dirname "$0")
 
 # Infer a github url from a remote url
 INFO_URL=${KIT_REMOTE_URL%%.git}
-INFO_URL=${INFO_URL/#git@/$GITHUB_PROTOCOL:\/\/}
+INFO_URL=${INFO_URL/#git@/$GHE_HTTP:\/\/}
 
 read -r -d '\0' HELP <<EOM
 ###
@@ -32,8 +32,8 @@ Command:     git $KIT_ID pull
 
 # Deleted
 Description: list the files that have been deleted from the current repository
-Command:    git $KIT_ID show-deleted [-h] [<path/to/file>]
-Example:    git $KIT_ID show-deleted
+Command:     git $KIT_ID show-deleted [-h] [<path/to/file>]
+Example:     git $KIT_ID show-deleted
 
 # Help
 Description: This help page.
