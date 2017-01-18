@@ -19,9 +19,10 @@ if grep -q $TYPE_KEY $FILE; then
 fi
 
 # Ensure to remove any regex / target entries.
-mv $FILE $FILE.orig
-grep -v "^commentURLParser$KEY_NUMBER\.\(regex\|target\)" $FILE.orig > $FILE
-rm $FILE.orig
+TEMP_FILE=$(mktemp)
+mv $FILE $TEMP_FILE
+grep -v "^commentURLParser$KEY_NUMBER\.\(regex\|target\)" $TEMP_FILE > $FILE
+rm $TEMP_FILE
 
 echo "$TYPE_KEY=$TYPE_VALUE" >> $FILE
 echo "$REGEX_KEY=$REGEX_VALUE" >> $FILE
