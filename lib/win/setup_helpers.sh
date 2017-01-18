@@ -1,3 +1,7 @@
+function open_url () {
+    explorer "$1"
+}
+
 function one_ping () {
     ping -n 1 $1
 }
@@ -11,7 +15,7 @@ function install_git_lfs ()
     local KIT_PATH=$1
     local VERSION=$2
 
-    local GIT_LFS_CHECKSUM=ee22b71e366f8148b887a2310efe804e
+    local GIT_LFS_CHECKSUM=2e095cd4feb5a3ed08a53995976f66ef
     # Run this to calculate the hash for a new version:
     # export V="1.1.1"; curl --location https://github.com/github/git-lfs/releases/download/v$V/git-lfs-windows-amd64-$V.zip | md5
 

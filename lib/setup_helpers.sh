@@ -108,7 +108,7 @@ function create_ghe_token () {
 
     # Request a new token
     curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" -X PUT \
-            --data "{\"scopes\":[\"repo\"], \"note\":\"Enterprise Config ($COMPUTER_NAME)\", \"client_secret\":\"$CLIENT_SECRET\"}" \
+            --data "{\"scopes\":[\"repo\",\"gist\"], \"note\":\"Enterprise Config ($COMPUTER_NAME)\", \"client_secret\":\"$CLIENT_SECRET\"}" \
             $TOKEN_URL \
         | perl -ne 'print "$1\n" if m%^\s*"token":\s*"([0-9a-f]{40})"[,]?$%i' \
         | head -n 1

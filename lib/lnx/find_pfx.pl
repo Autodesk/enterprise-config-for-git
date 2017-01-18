@@ -4,7 +4,7 @@
 # We would like to see what the user would when
 # typing `which git`
 
-use 5.016;
+use strict;
 use warnings;
 use File::Basename;
 

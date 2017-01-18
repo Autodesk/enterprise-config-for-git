@@ -32,8 +32,8 @@ Command:     git $KIT_ID pull
 
 # Deleted
 Description: list the files that have been deleted from the current repository
-Command:    git adsk show-deleted [-h] [<path/to/file>]
-Example:    git adsk show-deleted
+Command:     git adsk show-deleted [-h] [<path/to/file>]
+Example:     git adsk show-deleted
 
 # Help
 Description: This help page.
@@ -42,6 +42,10 @@ Command:     git $KIT_ID help
 # Version
 Description: Print version information.
 Command:     git $KIT_ID version
+
+# Paste
+Description: upload a file as a GitHub gist
+Command:     git $KIT_ID paste <path/to/file>
 
 ---
 You can easily add your own commands. See $INFO_URL for details.

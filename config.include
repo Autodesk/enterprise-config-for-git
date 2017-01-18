@@ -3,6 +3,27 @@
 # c.f. https://groups.google.com/forum/#!topic/git-for-windows/9WrSosaa4A8
     fscache = true
 
+[help]
+    autocorrect = 1
+
+[color]
+    diff = auto
+    status = auto
+    branch = auto
+    ui = true
+
+[submodule]
+    fetchJobs = 0
+
+# Configure pull to fetch-and-rebase rather than fetch-and-merge.
+# Also, prevent these rebases from inlining an existing local merge.
+# See this article for a thorough explanation:
+# https://medium.com/@porteneuve/getting-solid-at-git-rebase-vs-merge-4fa1a48c53aa#.ntv2atccl
+[pull]
+    rebase = preserve
+
+[rebase]
+    autoStash = true
 
 [push]
     default = simple
@@ -16,9 +37,13 @@
     batch = true
     ConcurrentTransfers = 10
 
+[lfs "transfer"]
+    maxretries = 10
+
 [filter "lfs"]
     clean = git-lfs clean %f
     smudge = git-lfs smudge %f
+    process = git-lfs filter-process
     required = true
 
 
@@ -67,3 +92,10 @@
             echo \"Enterprise Config command '$COMMAND' not found.\"; \
         fi \
     }; f"
+
+
+###############################################################################
+# GitHub for Windows
+###############################################################################
+[ghfw]
+    disableverification = true

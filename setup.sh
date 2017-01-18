@@ -5,7 +5,7 @@ set -e
 # Set Required Versions
 ###############################################################################
 MINIMUM_GIT_VERSION=2.3.2
-MINIMUM_GIT_LFS_VERSION=1.4.1   # On update make sure to update $GIT_LFS_CHECKSUM in lib/*/setup_helpers.sh, too!
+MINIMUM_GIT_LFS_VERSION=1.5.5   # On update make sure to update $GIT_LFS_CHECKSUM in lib/*/setup_helpers.sh, too!
 
 ###############################################################################
 # Main
@@ -165,13 +165,10 @@ check_git_lfs
 # Setup/store credentials
 git config --global adsk.github.account $ADS_USER
 git config --global adsk.github.server "$GITHUB_SERVER"
+git config --global credential.helper "$(credential_helper) $(credential_helper_parameters)"
 
 if ! is_ghe_token "$ADS_PASSWORD_OR_TOKEN"; then
-    # Check things that require a domain password
-    # e.g. check signed source code policy etc.
-
     echo 'Requesting a new GitHub token for this machine...'
-    git config --global credential.helper "$(credential_helper) $(credential_helper_parameters)"
     GIT_PRODUCTION_TOKEN=$(create_ghe_token $GITHUB_SERVER $ADS_USER "$ADS_PASSWORD_OR_TOKEN" $KIT_CLIENT_ID $KIT_CLIENT_SECRET)
     store_token $GITHUB_SERVER $ADS_USER $GIT_PRODUCTION_TOKEN
 
