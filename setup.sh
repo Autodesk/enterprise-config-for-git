@@ -139,8 +139,6 @@ if [[ -z $QUIET_INTRO ]]; then
         if [[ $OLD_COMMIT != $NEW_COMMIT ]]; then
             # After syncing to remote, delegate to the new setup script
             # ... in case that changed.
-            # [jokram] Why is the checkout of a new branch adsk-setup necessary? The reset --hard will overwrite it, or?
-            # Or is it just to mark that this was the previous version?
             git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" checkout --quiet -B $KIT_ID-setup && \
             git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" reset --quiet --hard origin/$BRANCH && \
             GHE_USER=$GHE_USER GHE_PASSWORD_OR_TOKEN="$GHE_PASSWORD_OR_TOKEN" "$KIT_PATH/setup.sh" -q "$@"
