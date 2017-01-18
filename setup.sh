@@ -68,9 +68,9 @@ if [[ -z $QUIET_INTRO ]]; then
 
     if [[ -z $GHE_TOKEN ]]; then
         if [[ -z $STORED_GHE_ACCOUNT ]]; then
-            echo -n 'Please enter your GitHub Enterprise username and press [ENTER]: '
+            echo -n 'Please enter your $KIT_COMPANY username and press [ENTER]: '
         else
-            echo -n "Please enter your GitHub Enterprise username and press [ENTER] (empty for \"$STORED_GHE_ACCOUNT\"): "
+            echo -n "Please enter your $KIT_COMPANY username and press [ENTER] (empty for \"$STORED_GHE_ACCOUNT\"): "
         fi
         read GHE_USER
 

@@ -6,9 +6,11 @@
 # Attention: This must match the alias defined in config.include!
 KIT_ID='adsk'
 
+# Define the name of the company displayed in help messages
+KIT_COMPANY='Autodesk'
+
 # Define your GitHub Enterprise server
 GHE_SERVER='git.yourcompany.com'
-
 
 # Add the protocol used to access GitHub server: http or https
 GHE_HTTP='https'
