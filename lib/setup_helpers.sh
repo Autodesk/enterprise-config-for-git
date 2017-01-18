@@ -7,8 +7,6 @@ CURL_RETRY_OPTIONS='--connect-timeout 5 --max-time 10 --retry 5 --retry-delay 0 
 KIT_PATH=$(dirname "$0")
 . "$KIT_PATH/../enterprise.constants"
 
-PROTOCOL=$GITHUB_PROTOCOL
-
 function print_kit_header () {
     cat << EOM
 ###
@@ -38,14 +36,14 @@ function store_token () {
     local USER=$2
     local TOKEN="$3"
     local HELPER=$(credential_helper)
-    printf "protocol=$PROTOCOL\nhost=$HOST\n\n" | git credential-$HELPER erase
-    printf "protocol=$PROTOCOL\nhost=$HOST\nusername=$USER\npassword=${TOKEN/\%/\%\%}\n\n" | git credential-$HELPER store
+    printf "protocol=$GHE_HTTP\nhost=$HOST\n\n" | git credential-$HELPER erase
+    printf "protocol=$GHE_HTTP\nhost=$HOST\nusername=$USER\npassword=${TOKEN/\%/\%\%}\n\n" | git credential-$HELPER store
 }
 
 function get_credentials () {
     local HOST=$1
     local USER=$2
-    printf "protocol=$PROTOCOL\nhost=$HOST\nusername=$USER\n\n" \
+    printf "protocol=$GHE_HTTP\nhost=$HOST\nusername=$USER\n\n" \
         | git credential-$(credential_helper) get \
         | perl -0pe 's/.*password=//s'
 }
@@ -53,7 +51,7 @@ function get_credentials () {
 function remove_credentials () {
     local HOST=$1
     local HELPER=$(credential_helper)
-    printf "protocol=$PROTOCOL\nhost=$HOST\n\n" | git credential-$HELPER erase
+    printf "protocol=$GHE_HTTP\nhost=$HOST\n\n" | git credential-$HELPER erase
 }
 
 function has_command() {
@@ -75,7 +73,7 @@ function is_ghe_token_with_user_scope () {
     local HOST=$1
     local USER=$2
     local PASSWORD="$3"
-    curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" $PROTOCOL://$HOST/api/v3/users -I \
+    curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" $GHE_HTTP://$HOST/api/v3/users -I \
         | grep '^X-OAuth-Scopes:.*user.*' > /dev/null
 }
 
@@ -83,7 +81,7 @@ function get_ghe_name () {
     local HOST=$1
     local USER=$2
     local PASSWORD="$3"
-    curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" $PROTOCOL://$HOST/api/v3/user \
+    curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" $GHE_HTTP://$HOST/api/v3/user \
         | perl -ne 'print "$1" if m%^\s*"name":\s*"(.*)"[,]?$%i'
 }
 
@@ -91,7 +89,7 @@ function get_ghe_email () {
     local HOST=$1
     local USER=$2
     local PASSWORD="$3"
-    curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" $PROTOCOL://$HOST/api/v3/user/emails \
+    curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" $GHE_HTTP://$HOST/api/v3/user/emails \
         | perl -ne 'print "$1\n" if m%^\s*"email":\s*"(.+\@.+)"[,]?$%i' \
         | head -n 1
 }
@@ -104,17 +102,17 @@ function create_ghe_token () {
     local CLIENT_SECRET=$5
     local COMPUTER_NAME=$(hostname)
     local FINGERPRINT=$(calc_md5sum "$COMPUTER_NAME")
-    local TOKEN_URL="$PROTOCOL://$HOST/api/v3/authorizations/clients/$CLIENT_ID/$FINGERPRINT"
+    local TOKEN_URL="$GHE_HTTP://$HOST/api/v3/authorizations/clients/$CLIENT_ID/$FINGERPRINT"
 
     # Query all tokens of the current user and try to find a token for the current machine
-    TOKEN_ID=$(curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" $PROTOCOL://$HOST/api/v3/authorizations \
+    TOKEN_ID=$(curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" $GHE_HTTP://$HOST/api/v3/authorizations \
         | perl -pe 'chomp' \
         | perl -sne 'print "$1\n" if m%^.*{\s*"id"\:\s+(\d+).*?"fingerprint":\s*"$fingerprint".*%i' -- -fingerprint=$FINGERPRINT \
     )
 
     # If a token for the current machine was found then delete it
     if [ -n $TOKEN_ID ]; then
-        curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" -X DELETE $PROTOCOL://$HOST/api/v3/authorizations/$TOKEN_ID
+        curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" -X DELETE $GHE_HTTP://$HOST/api/v3/authorizations/$TOKEN_ID
     fi
 
     # Request a new token
@@ -222,18 +220,18 @@ function rewrite_ssh_to_https_if_required () {
     # SSH exists with "1" in case the user successfully authenticated because
     # GitHub does not provide shell access.
     if [[ $SSH_EXIT -ne 1 ]]; then
-        echo "Configuring $PROTOCOL URL rewrite for $HOST..."
+        echo "Configuring $GHE_HTTP URL rewrite for $HOST..."
         set +e
-        git config --global --remove-section url."$PROTOCOL://$HOST/" > /dev/null 2>&1
+        git config --global --remove-section url."$GHE_HTTP://$HOST/" > /dev/null 2>&1
         set -e
-        git config --global --add url."$PROTOCOL://$HOST/".insteadOf "ssh://git@$HOST:"
-        git config --global --add url."$PROTOCOL://$HOST/".insteadOf "ssh://git@$HOST:/"
-        git config --global --add url."$PROTOCOL://$HOST/".insteadOf "git@$HOST:"
-        git config --global --add url."$PROTOCOL://$HOST/".insteadOf "git@$HOST:/"
-        git config --global --add url."$PROTOCOL://$HOST/".pushInsteadOf "ssh://git@$HOST:"
-        git config --global --add url."$PROTOCOL://$HOST/".pushInsteadOf "ssh://git@$HOST:/"
-        git config --global --add url."$PROTOCOL://$HOST/".pushInsteadOf "git@$HOST:"
-        git config --global --add url."$PROTOCOL://$HOST/".pushInsteadOf "git@$HOST:/"
+        git config --global --add url."$GHE_HTTP://$HOST/".insteadOf "ssh://git@$HOST:"
+        git config --global --add url."$GHE_HTTP://$HOST/".insteadOf "ssh://git@$HOST:/"
+        git config --global --add url."$GHE_HTTP://$HOST/".insteadOf "git@$HOST:"
+        git config --global --add url."$GHE_HTTP://$HOST/".insteadOf "git@$HOST:/"
+        git config --global --add url."$GHE_HTTP://$HOST/".pushInsteadOf "ssh://git@$HOST:"
+        git config --global --add url."$GHE_HTTP://$HOST/".pushInsteadOf "ssh://git@$HOST:/"
+        git config --global --add url."$GHE_HTTP://$HOST/".pushInsteadOf "git@$HOST:"
+        git config --global --add url."$GHE_HTTP://$HOST/".pushInsteadOf "git@$HOST:/"
     fi
 }
 
