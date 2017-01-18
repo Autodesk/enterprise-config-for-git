@@ -5,7 +5,7 @@ set -e
 # Set Required Versions
 ###############################################################################
 MINIMUM_GIT_VERSION=2.3.2
-MINIMUM_GIT_LFS_VERSION=1.4.1   # On update make sure to update $GIT_LFS_CHECKSUM in lib/*/setup_helpers.sh, too!
+MINIMUM_GIT_LFS_VERSION=1.5.5   # On update make sure to update $GIT_LFS_CHECKSUM in lib/*/setup_helpers.sh, too!
 
 ###############################################################################
 # Main
@@ -165,16 +165,12 @@ check_git_lfs
 # Setup/store credentials
 git config --global $KIT_ID.github.account $GHE_USER
 git config --global $KIT_ID.github.server "$GHE_SERVER"
+git config --global credential.helper "$(credential_helper) $(credential_helper_parameters)"
 
 if ! is_ghe_token "$GHE_PASSWORD_OR_TOKEN"; then
-    # Check things that require a domain password
-    # e.g. check signed source code policy etc.
-
     echo 'Requesting a new GitHub token for this machine...'
-    git config --global credential.helper "$(credential_helper) $(credential_helper_parameters)"
-    GIT_PRODUCTION_TOKEN=$(create_ghe_token $GHE_SERVER $GHE_USER "$GHE_PASSWORD_OR_TOKEN" $KIT_CLIENT_ID $KIT_CLIENT_SECRET)
-    store_token $GHE_SERVER $GHE_USER $GIT_PRODUCTION_TOKEN
-
+    GHE_PRODUCTION_TOKEN=$(create_ghe_token $GHE_SERVER $GHE_USER "$GHE_PASSWORD_OR_TOKEN" $KIT_CLIENT_ID $KIT_CLIENT_SECRET)
+    store_token $GHE_SERVER $GHE_USER $GHE_PRODUCTION_TOKEN
 else
     echo 'Reusing existing GitHub token...'
     store_token $GHE_SERVER $GHE_USER $GHE_PASSWORD_OR_TOKEN

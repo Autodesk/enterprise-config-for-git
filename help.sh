@@ -43,6 +43,10 @@ Command:     git $KIT_ID help
 Description: Print version information.
 Command:     git $KIT_ID version
 
+# Paste
+Description: upload a file as a GitHub gist
+Command:     git $KIT_ID paste <path/to/file>
+
 ---
 You can easily add your own commands. See $INFO_URL for details.
 

@@ -1,3 +1,7 @@
+function open_url () {
+    :
+}
+
 function credential_helper () {
     echo cache
 }

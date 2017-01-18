@@ -7,4 +7,4 @@
 set -e
 
 git checkout $@
-git submodule update --recursive
+git submodule update --init --recursive
