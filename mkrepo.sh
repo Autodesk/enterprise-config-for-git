@@ -14,13 +14,13 @@ KIT_PATH=$(dirname "$0")
 . "$KIT_PATH/enterprise.constants"
 . "$KIT_PATH/lib/setup_helpers.sh"
 
-ADS_USER=$(git config --global adsk.github.account)
-[ -z "$ADS_USER" ] && error_exit 'Username must not be empty!'
+GHE_USER=$(git config --global $KIT_ID.github.account)
+[ -z "$GHE_USER" ] && error_exit 'Username must not be empty!'
 
-SERVER=$(git config --global adsk.github.server)
+SERVER=$(git config --global $KIT_ID.github.server)
 [ -z "$SERVER" ] && error_exit 'Server must not be empty!'
 
-TOKEN="$(get_credentials $SERVER $ADS_USER)"
+TOKEN="$(get_credentials $SERVER $GHE_USER)"
 [ -z "$TOKEN" ] && echo "Missing GitHub token" && exit 1
 
 URL="https://$SERVER/api/v3/user/repos"
@@ -39,4 +39,4 @@ then
   exit $STATUS
 fi
 
-echo "repo 'https://$SERVER/$ADS_USER/$REPO' created!"
+echo "repo 'https://$SERVER/$GHE_USER/$REPO' created!"
