@@ -187,7 +187,7 @@ company specific setup, e.g. scripts to be added, patched, or removed:
   ...
   ```
   Open: How to get the `<company>`. Maybe extract this code into a shell script
-  runcmd.sh which includes `enterprise.constants`
+  `runcmd.sh` which includes `enterprise.constants`
 - If so then execute the company specific script
 - If not then check if `<command>.sh` exists
 - If so then execute the generic script
@@ -200,7 +200,7 @@ company specific setup, e.g. scripts to be added, patched, or removed:
   have company specific content
 - With this alternative
 
-## Configuration
+## Configuration Data
 ### Git
 - URL to get Git releases (or use network location?)
 - Version to get
@@ -212,10 +212,30 @@ company specific setup, e.g. scripts to be added, patched, or removed:
 - Version to get
 - Checksum
 
-### SSH Agent Wrapper Script
-- Maintained inside this repository, so no checksum etc. necessary
+### GitHub
+- Server URL
 
-### SSH Key Setup Script
-- Maintained inside this repository, so no checksum etc. necessary
+### JIRA
+- Server URL
 
-### GitHub Account Setup Script
+### Enterprise Config
+- Company Name
+- Kit Name (= shortcut for company)
+  Alternatively the kit could be company neutral, e.g.
+  - `git ext <command>` or
+  - `git addon <command>` or
+  - `git custom <command>`
+- Enterprise Config repository URL
+  Alternative: get it via `git remote get-url origin`
+- E-Mail address of company support
+
+## Open Points
+- Different script languages need the `enterpise.constants`:
+  - __bash__: solved by `source` command
+  - __perl__: needs a function to read and define as public variables
+  - __powershell__: needs a function to read and define as public variables
+  - __batch__ (if necessary): needs a function to read and define as public variables  
+    (e.g. http://stackoverflow.com/questions/2866117/read-ini-from-windows-batch-file)
+- Split `setup.sh` into smaller library functions.
+  `setup.sh` might be nearly always company specific, but library functions could
+  be helpful.
