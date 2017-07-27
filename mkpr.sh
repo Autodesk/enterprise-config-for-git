@@ -33,11 +33,11 @@ KIT_PATH=$(dirname "$0")
 . "$KIT_PATH/lib/setup_helpers.sh"
 
 set +e
-BASE_BRANCH=$(git config 'adsk.pr-base-default')
+BASE_BRANCH=$(git config '$KIT_ID.pr-base-default')
 set -e
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-for BRANCH in $(git config --get-regexp 'adsk\.pr-base-branch-' | sed 's/.* //'); do
-    BRANCH=${BRANCH#adsk.pr-base-branch-}
+for BRANCH in $(git config --get-regexp '$KIT_ID\.pr-base-branch-' | sed 's/.* //'); do
+    BRANCH=${BRANCH#$KIT_ID.pr-base-branch-}
     shopt -s nocasematch
     case "$CURRENT_BRANCH" in
       *$BRANCH*)
@@ -50,7 +50,7 @@ done
 
 if [ -z "$BASE_BRANCH" ]
 then
-    error_exit "No base branch found.\n  Please configure your default Pull Request base with:\n  git config --local adsk.pr-base-default YourBaseBranch"
+    error_exit "No base branch found.\n  Please configure your default Pull Request base with:\n  git config --local $KIT_ID.pr-base-default YourBaseBranch"
 else
     print_success "Pull Request base: $BASE_BRANCH"
 fi
@@ -63,8 +63,8 @@ fi
 
 git push --set-upstream $REMOTE "$CURRENT_BRANCH"
 
-USER=$(git config adsk.github.account)
-PASSWORD="$(get_credentials $GITHUB_SERVER $USER)"
+USER=$(git config $KIT_ID.github.account)
+PASSWORD="$(get_credentials $GHE_SERVER $USER)"
 SLUG_REGEX='/autodesk\.com[:\/]([^\/]+\/[^\/\.]+)/ && print "$1\n"'
 SLUG=$(git config --get remote.$REMOTE.url | perl -ne "$SLUG_REGEX")
 
@@ -81,7 +81,7 @@ fi
 
 PR_URL=$(curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" -X POST \
         --data "{\"title\": \"$CURRENT_BRANCH\", \"head\": \"$CURRENT_BRANCH\", \"base\": \"$BASE_BRANCH\"}" \
-        "https://$GITHUB_SERVER/api/v3/repos/$SLUG/pulls" \
+        "https://$GHE_SERVER/api/v3/repos/$SLUG/pulls" \
     | perl -ne 'print "$1\n" if m%^\s*"html_url":\s*"(.*\/pull\/[0-9]+)"[,]?$%i' \
 )
 

@@ -38,13 +38,13 @@ check_dependency curl
 check_dependency ping
 
 # Check availability of the GitHub Enterprise server
-if ! one_ping $GITHUB_SERVER > /dev/null 2>&1; then
-    error_exit "Cannot reach $GITHUB_SERVER! Are you connected to the company network?"
+if ! one_ping $GHE_SERVER > /dev/null 2>&1; then
+    error_exit "Cannot reach $GHE_SERVER! Are you connected to the company network?"
 fi
 
-# Check if we can reach the GitHub Enterprise server via HTTPS
-if ! curl $CURL_RETRY_OPTIONS --silent --fail https://$GITHUB_SERVER > /dev/null 2>&1; then
-    error_exit "Cannot connect to $GITHUB_SERVER via HTTPS!"
+# Check if we can reach the GitHub Enterprise server
+if ! curl $CURL_RETRY_OPTIONS --silent --fail $GHE_URL > /dev/null 2>&1; then
+    error_exit "Cannot connect to $GHE_SERVER via $GHE_HTTP!"
 fi
 
 if [[ -z $QUIET_INTRO ]]; then
@@ -59,49 +59,49 @@ if [[ -z $QUIET_INTRO ]]; then
     # Access Token as environment variables directly:
     #
     #
-    # GITHUB_TOKEN=01234567890abcdef01234567890abcdef012345 git adsk
+    # GHE_TOKEN=01234567890abcdef01234567890abcdef012345 git adsk
     #
     set +e
-    STORED_GITHUB_ENTERPRISE_ACCOUNT=$(git config --global adsk.github.account)
-    STORED_GITHUB_ENTERPRISE_SERVER=$(git config --global adsk.github.server)
+    STORED_GHE_ACCOUNT=$(git config --global $KIT_ID.github.account)
+    STORED_GHE_SERVER=$(git config --global $KIT_ID.github.server)
     set -e
 
-    if [[ -z $GITHUB_TOKEN ]]; then
-        if [[ -z $STORED_GITHUB_ENTERPRISE_ACCOUNT ]]; then
-            echo -n 'Please enter your Autodesk username and press [ENTER]: '
+    if [[ -z $GHE_TOKEN ]]; then
+        if [[ -z $STORED_GHE_ACCOUNT ]]; then
+            echo -n 'Please enter your $KIT_COMPANY username and press [ENTER]: '
         else
-            echo -n "Please enter your Autodesk username and press [ENTER] (empty for \"$STORED_GITHUB_ENTERPRISE_ACCOUNT\"): "
+            echo -n "Please enter your $KIT_COMPANY username and press [ENTER] (empty for \"$STORED_GHE_ACCOUNT\"): "
         fi
-        read ADS_USER
+        read GHE_USER
 
-        if [[ -z $ADS_USER ]]; then
-            if [[ ! -z $STORED_GITHUB_ENTERPRISE_ACCOUNT ]]; then
-                ADS_USER=$STORED_GITHUB_ENTERPRISE_ACCOUNT
+        if [[ -z $GHE_USER ]]; then
+            if [[ ! -z $STORED_GHE_ACCOUNT ]]; then
+                GHE_USER=$STORED_GHE_ACCOUNT
             else
                 error_exit 'Username must not be empty!'
             fi
         fi
 
         # GitHub usernames have a "-" instead of a "_"
-        ADS_USER=${ADS_USER//_/-}
+        GHE_USER=${GHE_USER//_/-}
 
-        if [ -n "$STORED_GITHUB_ENTERPRISE_SERVER" ]; then
-            ADS_PASSWORD_OR_TOKEN="$(get_credentials $STORED_GITHUB_ENTERPRISE_SERVER $ADS_USER)"
+        if [ -n "$STORED_GHE_SERVER" ]; then
+            GHE_PASSWORD_OR_TOKEN="$(get_credentials $STORED_GHE_SERVER $GHE_USER)"
         fi
     else
-        ADS_USER="token"
-        ADS_PASSWORD_OR_TOKEN=$GITHUB_TOKEN
+        GHE_USER="token"
+        GHE_PASSWORD_OR_TOKEN=$GHE_TOKEN
     fi
 
-    if [ -n "$ADS_PASSWORD_OR_TOKEN" ]; then
-        if has_valid_credentials $KIT_TESTFILE $ADS_USER "$ADS_PASSWORD_OR_TOKEN"; then
+    if [ -n "$GHE_PASSWORD_OR_TOKEN" ]; then
+        if has_valid_credentials $KIT_TESTFILE $GHE_USER "$GHE_PASSWORD_OR_TOKEN"; then
             echo 'Stored token is still valid. Using it ...'
         else
             echo 'Stored or cached token is invalid.'
-            read_password $GITHUB_SERVER $KIT_TESTFILE $ADS_USER ADS_PASSWORD_OR_TOKEN
+            read_password $GHE_SERVER $KIT_TESTFILE $GHE_USER GHE_PASSWORD_OR_TOKEN
         fi
     else
-        read_password $GITHUB_SERVER $KIT_TESTFILE $ADS_USER ADS_PASSWORD_OR_TOKEN
+        read_password $GHE_SERVER $KIT_TESTFILE $GHE_USER GHE_PASSWORD_OR_TOKEN
     fi
 
     #
@@ -127,10 +127,10 @@ if [[ -z $QUIET_INTRO ]]; then
     if  [[ -z $NO_UPDATE ]]; then
         CURRENT_KIT_REMOTE_URL=$(git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" config --get remote.origin.url)
         if [[ $CURRENT_KIT_REMOTE_URL != $KIT_REMOTE_URL ]]; then
-            warning "You are updating 'git adsk' from an unofficial source: $CURRENT_KIT_REMOTE_URL"
+            warning "You are updating 'git $KIT_ID' from an unofficial source: $CURRENT_KIT_REMOTE_URL"
         fi
 
-        printf -v HELPER "!f() { cat >/dev/null; echo 'username=%s'; echo 'password=%s'; }; f" "$ADS_USER" "$ADS_PASSWORD_OR_TOKEN"
+        printf -v HELPER "!f() { cat >/dev/null; echo 'username=%s'; echo 'password=%s'; }; f" "$GHE_USER" "$GHE_PASSWORD_OR_TOKEN"
         git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" -c credential.helper="$HELPER" fetch --prune --quiet origin
 
         OLD_COMMIT=$(git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" rev-parse HEAD)
@@ -139,9 +139,9 @@ if [[ -z $QUIET_INTRO ]]; then
         if [[ $OLD_COMMIT != $NEW_COMMIT ]]; then
             # After syncing to remote, delegate to the new setup script
             # ... in case that changed.
-            git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" checkout --quiet -B adsk-setup && \
+            git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" checkout --quiet -B $KIT_ID-setup && \
             git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" reset --quiet --hard origin/$BRANCH && \
-            ADS_USER=$ADS_USER ADS_PASSWORD_OR_TOKEN="$ADS_PASSWORD_OR_TOKEN" "$KIT_PATH/setup.sh" -q "$@"
+            GHE_USER=$GHE_USER GHE_PASSWORD_OR_TOKEN="$GHE_PASSWORD_OR_TOKEN" "$KIT_PATH/setup.sh" -q "$@"
             exit $?
         fi
     fi
@@ -152,7 +152,7 @@ case $(uname -s) in
 esac
 
 # Detect special user accounts
-case $ADS_USER in
+case $GHE_USER in
     svc-*)  IS_SERVICE_ACCOUNT=1;;
 esac
 
@@ -163,37 +163,36 @@ check_git
 check_git_lfs
 
 # Setup/store credentials
-git config --global adsk.github.account $ADS_USER
-git config --global adsk.github.server "$GITHUB_SERVER"
+git config --global $KIT_ID.github.account $GHE_USER
+git config --global $KIT_ID.github.server "$GHE_SERVER"
 git config --global credential.helper "$(credential_helper) $(credential_helper_parameters)"
 
-if ! is_ghe_token "$ADS_PASSWORD_OR_TOKEN"; then
+if ! is_ghe_token "$GHE_PASSWORD_OR_TOKEN"; then
     echo 'Requesting a new GitHub token for this machine...'
-    GIT_PRODUCTION_TOKEN=$(create_ghe_token $GITHUB_SERVER $ADS_USER "$ADS_PASSWORD_OR_TOKEN" $KIT_CLIENT_ID $KIT_CLIENT_SECRET)
-    store_token $GITHUB_SERVER $ADS_USER $GIT_PRODUCTION_TOKEN
-
+    GHE_PRODUCTION_TOKEN=$(create_ghe_token $GHE_SERVER $GHE_USER "$GHE_PASSWORD_OR_TOKEN" $KIT_CLIENT_ID $KIT_CLIENT_SECRET)
+    store_token $GHE_SERVER $GHE_USER $GHE_PRODUCTION_TOKEN
 else
     echo 'Reusing existing GitHub token...'
-    store_token $GITHUB_SERVER $ADS_USER $ADS_PASSWORD_OR_TOKEN
+    store_token $GHE_SERVER $GHE_USER $GHE_PASSWORD_OR_TOKEN
 fi
 
 # Setup URL rewrite
-rewrite_ssh_to_https_if_required $GITHUB_SERVER
+rewrite_ssh_to_https_if_required $GHE_SERVER
 
 # Setup username and email only for actual users, no service accounts
 if [[ -z $IS_SERVICE_ACCOUNT ]]; then
-    if ! is_ghe_token "$ADS_PASSWORD_OR_TOKEN" || \
-        is_ghe_token_with_user_scope $GITHUB_SERVER $ADS_USER "$ADS_PASSWORD_OR_TOKEN"; then
+    if ! is_ghe_token "$GHE_PASSWORD_OR_TOKEN" || \
+        is_ghe_token_with_user_scope $GHE_SERVER $GHE_USER "$GHE_PASSWORD_OR_TOKEN"; then
 
         echo ''
-        echo "Querying information for user \"$ADS_USER\" from $GITHUB_SERVER..."
-        NAME=$(get_ghe_name $GITHUB_SERVER $ADS_USER "$ADS_PASSWORD_OR_TOKEN")
-        EMAIL=$(get_ghe_email $GITHUB_SERVER $ADS_USER "$ADS_PASSWORD_OR_TOKEN")
+        echo "Querying information for user \"$GHE_USER\" from $GHE_SERVER..."
+        NAME=$(get_ghe_name $GHE_SERVER $GHE_USER "$GHE_PASSWORD_OR_TOKEN")
+        EMAIL=$(get_ghe_email $GHE_SERVER $GHE_USER "$GHE_PASSWORD_OR_TOKEN")
 
         if [[ -z "$NAME" ]]; then
-            error_exit "Could not retrieve your name. Please go to https://$GITHUB_SERVER/settings/profile and check your name!"
+            error_exit "Could not retrieve your name. Please go to $GHE_URL/settings/profile and check your name!"
         elif [[ -z "$EMAIL" ]]; then
-            error_exit "Could not retrieve your email address. Please go to https://$GITHUB_SERVER/settings/emails and check your email!"
+            error_exit "Could not retrieve your email address. Please go to $GHE_URL/settings/emails and check your email!"
         fi
 
         echo ''
@@ -223,23 +222,23 @@ fi
 # Setup environment
 if [[ -z "$ENVIRONMENT" ]]; then
     set +e
-    ENVIRONMENT=$(git config --global adsk.environment)
+    ENVIRONMENT=$(git config --global $KIT_ID.environment)
     set -e
 fi
 if [[ -e "$KIT_PATH/envs/$ENVIRONMENT/setup.sh" ]]; then
     echo "Configuring $ENVIRONMENT environment..."
-    git config --global adsk.environment "$ENVIRONMENT"
+    git config --global $KIT_ID.environment "$ENVIRONMENT"
     . "$KIT_PATH/envs/$ENVIRONMENT/setup.sh" "$KIT_PATH/envs/$ENVIRONMENT"
 elif [[ "$ENVIRONMENT" == "vanilla" ]]; then
     echo "Resetting environment..."
-    git config --global adsk.environment ""
+    git config --global $KIT_ID.environment ""
 elif [[ -n "$ENVIRONMENT" ]]; then
     warning "Environment \"$ENVIRONMENT\" not found!"
-    git config --global adsk.environment ""
+    git config --global $KIT_ID.environment ""
 fi
 
 GIT_TAG=$(git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" tag --points-at HEAD)
 if [[ -z "$GIT_TAG" ]]; then
     GIT_TAG="[dev build]"
 fi
-print_success "git adsk $GIT_TAG successfully configured!"
+print_success "git $KIT_ID $GIT_TAG successfully configured!"

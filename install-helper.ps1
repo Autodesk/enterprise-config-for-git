@@ -69,24 +69,64 @@ param (
   [string]$file
  )
   $downloader = new-object System.Net.WebClient
+  $proxyurl = ""
+  if (Test-Path env:http_proxy) {
+     $proxyurl = $env:http_proxy
+  }
+  if ($proxyurl.length -gt 0) {
+    $proxy = new-object System.Net.WebProxy
+    $proxy.Address = $proxyurl
+    $proxy.useDefaultCredentials = $true
+    $downloader.proxy = $proxy
+  }
   $defaultCreds = [System.Net.CredentialCache]::DefaultCredentials
   if ($defaultCreds -ne $null) {
     $downloader.Credentials = $defaultCreds
   }
-  $downloader.DownloadFile($url, $file)
-}
-
-Download-File $gitInstallerURL $gitInstallerEXE
-
-if ($PSVersionTable.PSVersion.Major -ge 4) {
-  $hash = Get-FileHash $gitInstallerEXE -Algorithm SHA256
-  if ($hash.Hash -ne $gitInstallerHash) {
-    Write-Output "ERROR: SHA256 hash of the Git for Windows installer does not match."
-    exit
+  Try {
+    $downloader.DownloadFile($url, $file)
   }
-} else {
-  Write-Output "WARNING: SHA256 hash of the Git for Windows installer cannot be checked as your Powershell version is outdated (expected on Windows 7 and below)."
+  Catch
+  {
+    Write-Host "ERROR" -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    exit 1
+  }
 }
+
+Write-Host -NoNewline "Downloading '$gitInstallerURL'..."
+Download-File $gitInstallerURL $gitInstallerEXE
+Write-Output "OK"
+
+function Check-SHA256 {
+param (
+  [string]$file
+ )
+  # Code snippet found here: https://github.com/FuzzySecurity/PowerShell-Suite/blob/master/Calculate-Hash.ps1
+  $stream = [system.io.file]::openread((resolve-path $file))
+  $algorithm = [System.Security.Cryptography.HashAlgorithm]::create("SHA256")
+  $hash = $algorithm.ComputeHash($stream)
+  $stream.close()
+  $stream.dispose()
+  $hash = [system.bitconverter]::tostring($hash).replace('-', '' )
+  return $hash.ToLower()
+}
+
+Write-Host -NoNewline "Verifying SHA256 checksum of 'Git for Windows' installer..."
+if ($PSVersionTable.PSVersion.Major -ge 4) {
+  $hash = (Get-FileHash $gitInstallerEXE -Algorithm SHA256).Hash
+}
+else {
+  $hash = Check-SHA256 $gitInstallerEXE
+}
+if ($hash -ne $gitInstallerHash) {
+  Write-Host "ERROR" -ForegroundColor Red
+  Write-Host "SHA256 hash of the 'Git for Windows' installer does not match:" -ForegroundColor Red
+  Write-Host "Downloaded: $hash" -ForegroundColor Red
+  Write-Host "Expected:   $gitInstallerHash" -ForegroundColor Red
+  exit 1
+}
+Write-Output "OK"
 
 Set-Content $bootstrap "@echo off" -Encoding ASCII
 Add-Content $bootstrap "`"$gitInstallerEXE`" /SILENT /COMPONENTS=`"icons,icons\desktop,ext,ext\shellhere,ext\guihere,assoc,assoc_sh`"" -Encoding ASCII
