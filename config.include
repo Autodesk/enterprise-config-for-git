@@ -82,12 +82,12 @@
         if [ -z \"$COMMAND\" ] || [ \"$COMMAND\" = \"setup\" ]; then \
             TMP_SETUP=$(mktemp -t git-enterprise-kit.XXXXXX) && \
             cp \"$KIT_PATH/setup.sh\" \"$TMP_SETUP\" && \
-            bash \"$TMP_SETUP\" \"$KIT_PATH\" $@ && \
+            bash \"$TMP_SETUP\" \"$KIT_PATH\" \"$@\" && \
             rm \"$TMP_SETUP\"; \
         elif [ \"$COMMAND\" = \"install\" ]; then \
             echo \"Enterprise config already installed!\"; \
         elif [ -e \"$KIT_PATH/$COMMAND.sh\" ]; then \
-            bash \"$KIT_PATH/$COMMAND.sh\" $@; \
+            bash \"$KIT_PATH/$COMMAND.sh\" \"$@\"; \
         else \
             echo \"Enterprise Config command '$COMMAND' not found.\"; \
         fi \
