@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+#/
+#/ Print "git $KIT_ID" version.
+#/
 set -e
 
 KIT_PATH=$(dirname "$0")

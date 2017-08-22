@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-#
-# Override the Enterprise Config push protection feature configure in
-# config.include.
-#
-# Usage: git <KIT_ID> enable-public-push <server/org/repo>
-#
+#/
+#/ Override the Enterprise Config push protection feature configure in
+#/ config.include.
+#/
+#/ Usage: git $KIT_ID enable-public-push <server/org/repo>
+#/
 set -e
 
 KIT_PATH=$(dirname "$0")

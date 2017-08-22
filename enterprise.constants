@@ -2,31 +2,21 @@
 # Configure these variables. See README.md for details.
 ###############################################################################
 
-# Define the name of the setup command for your company
-# Attention: This must match the alias defined in config.include!
-KIT_ID='adsk'
+KIT_ID='adsk'  # This must match the alias defined in config.include
 
-# Define your GitHub Enterprise server
 GITHUB_SERVER='git.yourcompany.com'
-
-# Define the path of this repo on your GitHub Enterprise server
 KIT_ORG_REPO='yourorg/enterprise-config-for-git'
-
-# Register an OAuth application on your GitHub Enterprise server:
-# https://developer.github.com/v3/oauth/
+KIT_TESTFILE="https://$GITHUB_SERVER/api/v3"
+KIT_REMOTE_URL="https://$GITHUB_SERVER/$KIT_ORG_REPO.git"
 KIT_CLIENT_ID=<< YOUR OAUTH CLIENT ID >>
 KIT_CLIENT_SECRET=<< YOUR OAUTH SECRET >>
-
-# Define the link to your source code policy
 KIT_SOURCE_CODE_POLICY_URL=https://yourcompany.com/policy
 
-# Define a message for the users in case of errors
 ERROR_HELP_MESSAGE="Please contact admin@yourcompany.com!"
 
+# Versions
+INSTALL_UPGRADE_GIT_VERSION=2.14.1          # On update make sure to update strings in install-helper.ps1, too!
+MINIMUM_ADVISED_GIT_VERSION=2.13.5
+MINIMUM_REQUIRED_GIT_VERSION=2.3.2
 
-###############################################################################
-# No changes beyond this point
-###############################################################################
-
-KIT_TESTFILE="https://$GITHUB_SERVER/raw/$KIT_ORG_REPO/master/README.md"
-KIT_REMOTE_URL="https://$GITHUB_SERVER/$KIT_ORG_REPO.git"
+MINIMUM_GIT_LFS_VERSION=2.2.1               # On update make sure to update $GIT_LFS_SHA256 in lib/*/setup_helpers.sh, too!

@@ -1,31 +1,31 @@
 #!/usr/bin/env bash
-#
-# Create a Pull Request
-#
-# In order to create a Pull Request from the current branch we need to
-# know the base branch of the Pull Request (also known as the "target"
-# of the Pull Request). If the current branch name contains a configured
-# base branch as substring, then this is used. If no base branch was
-# found, then the default base branch is used if configured. Afterwards
-# the script creates a Pull Request on GitHub.
-#
-# After the initial repository clone, change directory to your Git
-# repository and setup...
-#
-# ... your default base branch:
-# $ git config --local adsk.pr-base-default "<BRANCH-NAME>"
-#
-# ... your base branches:
-# $ git config --local adsk.pr-base-branch-<BRANCH-NAME> "<BRANCH-NAME>"
-#
-#
-# Example:
-# $ git config --local adsk.pr-base-default "master"
-# $ git config --local adsk.pr-base-branch-releasev3 "releasev3"
-#
-#
-# Usage: git <KIT_ID> mkpr
-#
+#/
+#/ Create a Pull Request
+#/
+#/ In order to create a Pull Request from the current branch we need to
+#/ know the base branch of the Pull Request (also known as the "target"
+#/ of the Pull Request). If the current branch name contains a configured
+#/ base branch as substring, then this is used. If no base branch was
+#/ found, then the default base branch is used if configured. Afterwards
+#/ the script creates a Pull Request on GitHub.
+#/
+#/ After the initial repository clone, change directory to your Git
+#/ repository and setup...
+#/
+#/ ... your default base branch:
+#/ $ git config --local adsk.pr-base-default "<BRANCH-NAME>"
+#/
+#/ ... your base branches:
+#/ $ git config --local adsk.pr-base-branch-<BRANCH-NAME> "<BRANCH-NAME>"
+#/
+#/
+#/ Example:
+#/ $ git config --local adsk.pr-base-default "master"
+#/ $ git config --local adsk.pr-base-branch-releasev3 "releasev3"
+#/
+#/
+#/ Usage: git $KIT_ID mkpr
+#/
 set -e
 
 KIT_PATH=$(dirname "$0")
@@ -65,14 +65,8 @@ git push --set-upstream $REMOTE "$CURRENT_BRANCH"
 
 USER=$(git config adsk.github.account)
 PASSWORD="$(get_credentials $GITHUB_SERVER $USER)"
-SLUG_REGEX='/autodesk\.com[:\/]([^\/]+\/[^\/\.]+)/ && print "$1\n"'
+SLUG_REGEX='/yourcompany\.com[:\/]([^\/]+\/[^\/\.]+)/ && print "$1\n"'
 SLUG=$(git config --get remote.$REMOTE.url | perl -ne "$SLUG_REGEX")
-
-# SLUG Testcases
-# echo "https://git.autodesk.com/github-solutions/adsk-git" | perl -ne "$SLUG_REGEX";
-# echo "https://git.autodesk.com/github-solutions/adsk-git.git" | perl -ne "$SLUG_REGEX";
-# echo "git@git.autodesk.com:github-solutions/adsk-git" | perl -ne "$SLUG_REGEX";
-# echo "git@git.autodesk.com:github-solutions/adsk-git.git" | perl -ne "$SLUG_REGEX";
 
 if [ -z "$SLUG" ]
 then

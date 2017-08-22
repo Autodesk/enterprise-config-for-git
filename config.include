@@ -3,6 +3,15 @@
 # c.f. https://groups.google.com/forum/#!topic/git-for-windows/9WrSosaa4A8
     fscache = true
 
+# Enable long path support for Windows (no effect on OS X/Linux)
+# Git uses the proper API to create long paths on Windows. However, many
+# Windows applications use an outdated API that only support paths up to a
+# length of 260 characters. As a result these applications would not be able to
+# work with the longer paths properly. Keep that in mind if you run into path
+# trouble!
+# c.f. https://msdn.microsoft.com/en-us/library/aa365247(VS.85).aspx
+    longpaths = true
+
 [help]
     autocorrect = 1
 
@@ -14,13 +23,6 @@
 
 [submodule]
     fetchJobs = 0
-
-# Configure pull to fetch-and-rebase rather than fetch-and-merge.
-# Also, prevent these rebases from inlining an existing local merge.
-# See this article for a thorough explanation:
-# https://medium.com/@porteneuve/getting-solid-at-git-rebase-vs-merge-4fa1a48c53aa#.ntv2atccl
-[pull]
-    rebase = preserve
 
 [rebase]
     autoStash = true
@@ -41,8 +43,8 @@
     maxretries = 10
 
 [filter "lfs"]
-    clean = git-lfs clean %f
-    smudge = git-lfs smudge %f
+    clean = git-lfs clean -- %f
+    smudge = git-lfs smudge -- %f
     process = git-lfs filter-process
     required = true
 
@@ -75,6 +77,7 @@
 ###############################################################################
     adsk = "!f() { \
         KIT_PATH=$(dirname \"$(git config include.path)\") && \
+        ENV=$(git config adsk.environment || true) && \
         COMMAND=$1 && \
         if [ -n \"$COMMAND\" ]; then \
             shift 1; \
@@ -86,6 +89,8 @@
             rm \"$TMP_SETUP\"; \
         elif [ \"$COMMAND\" = \"install\" ]; then \
             echo \"Enterprise config already installed!\"; \
+        elif [ -n \"$ENV\" ] && [ -e "$KIT_PATH/envs/$ENV/$COMMAND.sh" ]; then \
+            bash \"$KIT_PATH/envs/$ENV/$COMMAND.sh\" \"$@\"; \
         elif [ -e \"$KIT_PATH/$COMMAND.sh\" ]; then \
             bash \"$KIT_PATH/$COMMAND.sh\" \"$@\"; \
         else \
@@ -99,3 +104,10 @@
 ###############################################################################
 [ghfw]
     disableverification = true
+
+###############################################################################
+# More helpful diff'ing of one line JSON files
+###############################################################################
+[diff "json"]
+    textconv = "perl -MJSON::PP -e '$j = JSON::PP->new->pretty->canonical; print $j->encode($j->decode(<>))'"
+    cachetextconv = true

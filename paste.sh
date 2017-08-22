@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-#
-# Paste code to GitHub's gist service
-#
-# Usage: git <KIT_ID> paste code.py
-#
+#/
+#/ Upload a file as a GitHub gist.
+#/
+#/ Usage: git $KIT_ID paste <filename>
+#/
+#/ Example: git $KIT_ID paste code.py
+#/
 set -e
 
 KIT_PATH=$(dirname "$0")
@@ -30,4 +32,4 @@ perl $KIT_PATH/lib/paste.pl \
     --user $ADS_USER \
     --token $ADS_PASSWORD_OR_TOKEN \
     --server $SERVER \
-    $@
+    "$@"

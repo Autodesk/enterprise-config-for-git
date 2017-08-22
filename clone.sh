@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-#
-# Clone Git repositories and download Git LFS files in parallel.
-# See more info here: https://github.com/github/git-lfs/issues/931
-#
-# Usage: git <KIT_ID> clone <repository URL> [<target directory>]
-#
-set -e
+#/
+#/ Fast clone a repository with Git LFS files and submodules.
+#/
+#/ Usage: git $KIT_ID clone <repository URL> [<target directory>]
+#/
 
-git-lfs clone --recursive $@
+# c.f. https://github.com/github/git-lfs/issues/931
+git-lfs clone --recursive "$@"

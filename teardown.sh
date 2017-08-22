@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-#
-# Remove credentials stored using the credential helpers
-#
-# Usage: git <KIT_ID> teardown
-#
+#/
+#/ Remove all Git credentials from your machine.
+#/
+#/ Usage: git $KIT_ID teardown
+#/
 set -e
 
 KIT_PATH=$(dirname "$0")

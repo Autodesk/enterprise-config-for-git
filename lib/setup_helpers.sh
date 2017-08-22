@@ -60,12 +60,12 @@ function is_ghe_token () {
     echo "$1" | perl -ne 'exit 1 if not /\b[0-9a-f]{40}\b/'
 }
 
-function is_ghe_token_with_user_scope () {
+function is_ghe_token_with_user_email_scope () {
     local HOST=$1
     local USER=$2
     local PASSWORD="$3"
-    curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" https://$HOST/api/v3/users -I \
-        | grep '^X-OAuth-Scopes:.*user.*' > /dev/null
+    curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" https://$HOST/api/v3/user -I \
+        | grep '^X-OAuth-Scopes:.*user:email.*' > /dev/null
 }
 
 function get_ghe_name () {
@@ -81,7 +81,7 @@ function get_ghe_email () {
     local USER=$2
     local PASSWORD="$3"
     curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" https://$HOST/api/v3/user/emails \
-        | perl -ne 'print "$1\n" if m%^\s*"email":\s*"(.*\@autodesk\.com)"[,]?$%i' \
+        | perl -ne 'print "$1\n" if m%^\s*"email":\s*"(.*\@yourcompany\.com)"[,]?$%i' \
         | head -n 1
 }
 
@@ -95,41 +95,28 @@ function create_ghe_token () {
     local FINGERPRINT=$(calc_md5sum "$COMPUTER_NAME")
     local TOKEN_URL="https://$HOST/api/v3/authorizations/clients/$CLIENT_ID/$FINGERPRINT"
 
-    # Query all tokens of the current user and try to find a token for the current machine
-    TOKEN_ID=$(curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" https://$HOST/api/v3/authorizations \
+    # Query all tokens of the current user and try to find a token for the
+    # current machine
+    #
+    # ATTENTION: This only queries up to 100 tokens. If an account is used on
+    # more machines then we need to implement proper pagination.
+    # c.f. https://developer.github.com/v3/guides/traversing-with-pagination/
+    TOKEN_ID=$(curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" "https://$HOST/api/v3/authorizations?per_page=100" \
         | perl -pe 'chomp' \
         | perl -sne 'print "$1\n" if m%^.*{\s*"id"\:\s+(\d+).*?"fingerprint":\s*"$fingerprint".*%i' -- -fingerprint=$FINGERPRINT \
     )
 
     # If a token for the current machine was found then delete it
-    if [ -n $TOKEN_ID ]; then
+    if [ -n "$TOKEN_ID" ]; then
         curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" -X DELETE https://$HOST/api/v3/authorizations/$TOKEN_ID
     fi
 
     # Request a new token
     curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" -X PUT \
-            --data "{\"scopes\":[\"repo\",\"gist\"], \"note\":\"Enterprise Config ($COMPUTER_NAME)\", \"client_secret\":\"$CLIENT_SECRET\"}" \
+            --data "{\"scopes\":[\"repo\",\"gist\",\"user:email\"], \"note\":\"Enterprise Config ($COMPUTER_NAME)\", \"client_secret\":\"$CLIENT_SECRET\"}" \
             $TOKEN_URL \
         | perl -ne 'print "$1\n" if m%^\s*"token":\s*"([0-9a-f]{40})"[,]?$%i' \
         | head -n 1
-}
-
-function check_md5sum () {
-    local MD5=$1
-    local FILEPATH=$2
-
-    if has_command md5sum; then
-        # Exit with the exit code of this command.
-        md5sum --check - <<EOM > /dev/null
-$MD5  $FILEPATH
-EOM
-    elif has_command md5; then
-        # OS X doesn't ship with md5sum :-/
-        local CHECKSUM=$(md5 -q "$FILEPATH")
-        [[ $MD5 == $CHECKSUM ]]
-    else
-        error_exit "No MD5 tool found. Can't verify file: $FILEPATH"
-    fi
 }
 
 function calc_md5sum () {
@@ -143,10 +130,22 @@ function calc_md5sum () {
     fi
 }
 
+function check_sha256 () {
+    local SHA256=$1
+    local FILEPATH=$2
+    if has_command shasum; then
+        echo "$SHA256  $FILEPATH" | shasum --status --portable --algorithm 256 --check -
+    elif has_command sha256sum; then
+        echo "$SHA256  $FILEPATH" | sha256sum --status --check -
+    else
+        error_exit 'No SHA256 tool found.'
+    fi
+}
+
 function fetch_git_lfs() {
     local VERSION=$1
     local SRC_FILE=$2
-    local GIT_LFS_CHECKSUM=$3
+    local GIT_LFS_SHA256=$3
 
     local SRC_URL=https://github.com/github/git-lfs/releases/download/v$VERSION/$SRC_FILE
 
@@ -159,15 +158,17 @@ function fetch_git_lfs() {
         error_exit "Git LFS download failed ($SRC_URL)."
     fi
 
-    if ! check_md5sum $GIT_LFS_CHECKSUM "$DOWNLOAD_FILE"; then
+    if ! check_sha256 $GIT_LFS_SHA256 "$DOWNLOAD_FILE"; then
         rm -f "$DOWNLOAD_FILE"
         error_exit "Git LFS does not have expected contents ($SRC_URL)." >&2
     fi
 }
 
 function check_git () {
-    if !(git --version | perl -pse "$VERSION_PARSER" -- -min=$MINIMUM_GIT_VERSION > /dev/null); then
-        error_exit "Git version $MINIMUM_GIT_VERSION required."
+    if ! (git --version | perl -pse "$VERSION_PARSER" -- -min=$MINIMUM_REQUIRED_GIT_VERSION > /dev/null); then
+        error_exit "Git version $MINIMUM_REQUIRED_GIT_VERSION is the minimum requirement (you have $(git --version))."
+    elif ! (git --version | perl -pse "$VERSION_PARSER" -- -min=$MINIMUM_ADVISED_GIT_VERSION > /dev/null); then
+        warning "You Git version is outdated. Please run 'git $KIT_ID upgrade'!"
     fi
 }
 
@@ -181,12 +182,12 @@ EOM
 }
 
 function check_git_lfs () {
-    if !(has_command git-lfs) ||
-       !(git-lfs 2>&1 | grep "git-lfs" > /dev/null) ||
-       !(git-lfs version | perl -pse "$VERSION_PARSER" -- -min=$MINIMUM_GIT_LFS_VERSION > /dev/null)
+    if ! (has_command git-lfs) ||
+       ! (git-lfs 2>&1 | grep "git-lfs" > /dev/null) ||
+       ! (git-lfs version | perl -pse "$VERSION_PARSER" -- -min="$MINIMUM_GIT_LFS_VERSION" > /dev/null)
     then
-        if [[ $1 != no-install ]]; then
-            install_git_lfs "$KIT_PATH" $MINIMUM_GIT_LFS_VERSION
+        if [ "$1" != "no-install" ]; then
+            install_git_lfs "$KIT_PATH" "$MINIMUM_GIT_LFS_VERSION"
         else
             git_lfs_error_exit
         fi
@@ -210,7 +211,7 @@ function rewrite_ssh_to_https_if_required () {
 
     # SSH exists with "1" in case the user successfully authenticated because
     # GitHub does not provide shell access.
-    if [[ $SSH_EXIT -ne 1 ]]; then
+    if [ "$SSH_EXIT" -ne 1 ]; then
         echo "Configuring HTTPS URL rewrite for $HOST..."
         set +e
         git config --global --remove-section url."https://$HOST/" > /dev/null 2>&1
@@ -227,25 +228,28 @@ function rewrite_ssh_to_https_if_required () {
 }
 
 function error_exit () {
-    echo -e "\n$(tput setaf 1)###\n### ERROR\n###\n> $(tput sgr 0)$1\n" >&2
-    echo -e "$(tput setaf 1)$ERROR_HELP_MESSAGE$(tput sgr 0)\n" >&2
+    echo -e "\n$(tput setaf 1)###\n### ERROR\n###\n> $(tput sgr0)$1\n" >&2
+    echo -e "$(tput setaf 1)$ERROR_HELP_MESSAGE$(tput sgr0)\n" >&2
     exit 1
 }
 
 function warning () {
-    echo -e "\n$(tput setaf 3)###\n### WARNING\n###\n> $(tput sgr 0)$1\n" >&2
+    echo -e "\n$(tput setaf 3)###\n### WARNING\n###\n> $(tput sgr0)$1\n" >&2
 }
 
 function print_success () {
-    echo -e "\n$(tput setaf 2)$1$(tput sgr 0)\n"
+    echo -e "\n$(tput setaf 2)$1$(tput sgr0)\n"
 }
-
 
 ###############################################################################
 # Load platform-specifics
 ###############################################################################
 function install_git_lfs () {
     git_lfs_error_exit
+}
+
+function install_git () {
+    error_exit "Installing/Upgrading Git on your platform is not supported, yet. $ERROR_HELP_MESSAGE"
 }
 
 function credential_helper_parameters () {
@@ -257,6 +261,7 @@ function one_ping () {
 }
 
 case $(uname -s) in
+      MSYS_NT-*) . "$KIT_PATH/lib/win/setup_helpers.sh";;
     MINGW??_NT*) . "$KIT_PATH/lib/win/setup_helpers.sh";;
          Darwin) . "$KIT_PATH/lib/osx/setup_helpers.sh";;
           Linux) . "$KIT_PATH/lib/lnx/setup_helpers.sh";;

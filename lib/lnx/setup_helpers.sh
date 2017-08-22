@@ -14,13 +14,11 @@ function credential_helper_parameters {
 function install_git_lfs {
     local KIT_PATH=$1
     local VERSION=$2
-    local GIT_LFS_CHECKSUM=33e65b2e1321fed86a6adbfcf008ea3c
-    # Run this to calculate the hash for a new version:
-    # export V="1.1.1"; curl --location https://github.com/github/git-lfs/releases/download/v$V/git-lfs-linux-amd64-$V.tar.gz | md5
+    local GIT_LFS_SHA256=95bcdab9897338fd923ad3a792010d6e817114e8c3b444e1e245889b6cd68888
 
     # Assigned in fetch_git_lfs
     local DOWNLOAD_FILE
-    fetch_git_lfs $VERSION git-lfs-linux-amd64-$VERSION.tar.gz $GIT_LFS_CHECKSUM
+    fetch_git_lfs $VERSION git-lfs-linux-amd64-$VERSION.tar.gz $GIT_LFS_SHA256
 
     local EXTRACT_FOLDER=$(mktemp -d -t gitlfs_extract.XXXXXXX)
     if ! tar -xvf "$DOWNLOAD_FILE" -C "$EXTRACT_FOLDER"; then
@@ -36,20 +34,39 @@ function install_git_lfs {
             # reuse existing install folder if this is an update
             PFX=$(dirname $(which git-lfs))
         else
-            PFX=$(perl "$KIT_PATH/lib/lnx/find_pfx.pl")
+            PFX=$(dirname $(which git))
         fi
         chmod 755 "$EXTRACT_FOLDER/$f/git-lfs"
         sudo cp "$EXTRACT_FOLDER/$f/git-lfs" $PFX
         sudo chmod 755 $PFX/git-lfs
     done
 
-    if [[ -e $DOWNLOAD_FILE ]]; then
+    if [ -e "$DOWNLOAD_FILE" ]; then
         rm -f "$DOWNLOAD_FILE"
     fi
 
-    if [[ -e $EXTRACT_FOLDER ]]; then
+    if [ -e "$EXTRACT_FOLDER" ]; then
         rm -rf "$EXTRACT_FOLDER"
     fi
 
     check_git_lfs no-install
+}
+
+function install_git {
+    if [[ -f /etc/redhat-release && $(grep -c "CentOS Linux release 7" /etc/redhat-release) -eq 1 ]]; then
+        # Centos 7
+
+    elif [[ -f /etc/redhat-release && $(grep -c "Fedora release" /etc/redhat-release) -eq 1 ]]; then
+        # Fedora
+        sudo dnf update -y git
+    elif [[ -f /etc/issue && $(grep -c "Ubuntu" /etc/issue) -eq 1 ]]; then
+        # Ubuntu
+        sudo apt-get -y install software-properties-common python-software-properties
+        sudo add-apt-repository -y ppa:git-core/ppa
+        sudo apt-get -y update
+        sudo apt-get -y remove git
+        sudo apt-get -y install git
+    else
+        echo "O/S not (yet) supported by Source Control Solutions team. Please ping us on #tech-git in Slack."
+    fi
 }
