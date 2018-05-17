@@ -1,7 +1,6 @@
 #!/bin/sh
 #/
-#/ A utility to list the files that have been deleted from the current
-#/ branch.
+#/ Show the files that have been deleted from the current branch
 #/
 #/ Usage: git $KIT_ID show-deleted [-h] [path]
 #/

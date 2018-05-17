@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #/
-#/ Check if a commit-ish is included in another commit-ish.
+#/ Check if a commit-ish is included in another commit-ish
 #/
 #/ Usage: git $KIT_ID is-included <CHECK_COMMIT> [CHECK_HEAD]
 #/

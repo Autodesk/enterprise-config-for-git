@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #/
-#/ Print "git $KIT_ID" version.
+#/ Print "git $KIT_ID" version
 #/
 set -e
 

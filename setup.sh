@@ -96,9 +96,6 @@ if [ -z "$QUIET_INTRO" ]; then
         ADS_PASSWORD_OR_TOKEN=$GITHUB_TOKEN
     fi
 
-    # GitHub usernames have a "-" instead of a "_"
-    ADS_USER=${ADS_USER//_/-}
-
     if [ -n "$ADS_PASSWORD_OR_TOKEN" ]; then
         if has_valid_credentials $KIT_TESTFILE $ADS_USER "$ADS_PASSWORD_OR_TOKEN"; then
             echo 'Stored token is still valid. Using it ...'
@@ -181,9 +178,9 @@ check_git
 check_git_lfs
 
 # Setup/store credentials
-git config --global adsk.github.account $ADS_USER
-git config --global adsk.github.server "$GITHUB_SERVER"
-git config --global credential.helper "$(credential_helper) $(credential_helper_parameters)"
+git config --global --replace-all adsk.github.account $ADS_USER
+git config --global --replace-all adsk.github.server "$GITHUB_SERVER"
+git config --global --replace-all credential.helper "$(credential_helper) $(credential_helper_parameters)"
 
 if ! is_ghe_token "$ADS_PASSWORD_OR_TOKEN"; then
     echo 'Requesting a new GitHub token for this machine...'
@@ -219,8 +216,8 @@ if [ -z $IS_SERVICE_ACCOUNT ]; then
         echo "Name:  $NAME"
         echo "Email: $EMAIL"
 
-        git config --global user.name "$NAME"
-        git config --global user.email "$EMAIL"
+        git config --global --replace-all user.name "$NAME"
+        git config --global --replace-all user.email "$EMAIL"
     fi
 fi
 
@@ -231,8 +228,8 @@ fi
 # config.include, but apparently this is not support right now:
 # https://groups.google.com/d/msg/smartgit/srEr0FpSjhI/UC2nEAKTCAAJ
 if [ -z "$(git config --global --get-regexp '^bugtraq\.jira\.')" ]; then
-    git config --global bugtraq.jira.url "https://jira.yourcompany.com/browse/%BUGID%"
-    git config --global bugtraq.jira.logregex "\\b([A-Z]{2,5}-\\d+)\\b"
+    git config --global --replace-all bugtraq.jira.url "https://jira.yourcompany.com/browse/%BUGID%"
+    git config --global --replace-all bugtraq.jira.logregex "\\b([A-Z]{2,5}-\\d+)\\b"
 fi
 
 if [ "$(git config --global http.sslVerify)" == "false" ]; then
@@ -247,14 +244,14 @@ if [ -z "$ENVIRONMENT" ]; then
 fi
 if [ -e "$KIT_PATH/envs/$ENVIRONMENT/setup.sh" ]; then
     echo "Configuring $(tput setaf 3)$ENVIRONMENT environment$(tput sgr0)..."
-    git config --global adsk.environment "$ENVIRONMENT"
+    git config --global --replace-all adsk.environment "$ENVIRONMENT"
     . "$KIT_PATH/envs/$ENVIRONMENT/setup.sh" "$KIT_PATH/envs/$ENVIRONMENT"
 elif [ "$ENVIRONMENT" == "vanilla" ]; then
     echo "Resetting environment..."
-    git config --global adsk.environment ""
+    set_vanilla_environment
 elif [ -n "$ENVIRONMENT" ]; then
     warning "Environment \"$ENVIRONMENT\" not found!"
-    git config --global adsk.environment ""
+    set_vanilla_environment
 fi
 
 GIT_TAG=$(git --git-dir="$KIT_PATH/.git" --work-tree="$KIT_PATH" tag --points-at HEAD)

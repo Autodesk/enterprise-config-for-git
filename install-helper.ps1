@@ -40,6 +40,7 @@ function Download-File {
     )
     Write-Host "Downloading $($name) ..."
 
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     $uri = New-Object System.Uri $url
     $request = [System.Net.HttpWebRequest]::Create($uri)
     $request.set_Timeout(15000) #15 second timeout
@@ -141,7 +142,7 @@ function Run {
 
 
 function Detect-Previous-Installations {
-       if ([System.IO.Directory]::Exists("$env:programfiles\Git LFS")) {
+    if ([System.IO.Directory]::Exists("$env:programfiles\Git LFS")) {
         Write-Output "ERROR: 'Git LFS' installation detected."
         Write-Output "Git LFS is now part of Git for Windows and your"
         Write-Output "installation might conflict with the official install."
@@ -157,6 +158,22 @@ function Detect-Previous-Installations {
 }
 
 
+# The following options are recognized in the -options array parameter as
+# of git for windows 2.14.1.windows.1.  They are reverse engineered from
+# this code: 
+# https://github.com/git-for-windows/build-extra/blob/9e59621fc536037fe913ef08af0242572a0e5c08/installer/install.iss#L2088-L2158
+#
+#    PathOption = BashOnly|Cmd|CmdTools
+#    SSHOption = OpenSSH|Plink
+#        PlinkPath = <path>
+#    CURLOption= OpenSSL|WinSSL
+#    CRLFOption = LFOnly|CRLFAlways|CRLFCommitAsIs
+#    BashTerminal = MinTTY|ConHost
+#    PerformanceTweaksFSCache = Disabled|Enabled
+#    UsecredentialManager = Disabled|Enabled
+#    EnableSymLinks = Diabled|Enabled
+#
+# TODO: Maybe print out this table via a function parameter?
 function Install-Git-For-Windows {
     param(
         [string]$username,
@@ -166,9 +183,11 @@ function Install-Git-For-Windows {
         [string]$repo,
         [string]$branch,
         [string]$kitID,
-        [string]$gitVersion='2.14.1.windows.1',
-        [string]$sha64bit='0dc556503e3ce4699228fc910a8e4a8d81172635ac8e8e16a11be107254c4901',
-        [string]$sha32bit='0129e21eaed8efa6d795f712656463ee4f90aa2b3b66168f29b0da98f74104f7'
+        [string]$gitVersion='2.17.0.windows.1',
+        [string]$sha64bit='39b3da8be4f1cf396663dc892cbf818cb4cfddb5bf08c13f13f5b784f6654496',
+        [string]$sha32bit='65b710e39db3d83b04a8a4bd56f54e929fb0abbab728c0a9abbc0dace8e361d2',
+        [switch]$prompt,
+        [string[]]$options=@()
     )
 
     Fix-PowerShellOutputRedirectionBug
@@ -196,9 +215,29 @@ function Install-Git-For-Windows {
     Stop-Process -erroraction 'silentlycontinue' -processname bash
 
     #
+    # Read install options from the command line
+    #
+    $silent_arg="/SILENT"
+    if ($prompt.IsPresent) {
+        # If the user wants prompting, then
+        # remove the "silent" switch
+        $silent_arg = ""
+    }
+
+    $gfw_options = @{
+        "UseCredentialManager" = "Disabled"
+    }
+
+    # Set/override options from the input parameters
+    $options | % { $o = $_ -split '='; $gfw_options.Set_Item($o[0], $o[1]) }
+
+    # combine options in to a string to pass to the invocation
+    $gfw_str_opts = ($gfw_options.GetEnumerator() | % { "/o:$($_.Name)=$($_.Value)" }) -join ' '
+
+    #
     # Install "Git for Windows"
     #
-    Run "admin" $gitInstallerEXE "/SILENT /COMPONENTS='icons,icons\desktop,ext,ext\shellhere,ext\guihere,gitlfs,assoc,assoc_sh' /o:UseCredentialManager=Disabled" "Git for Windows installation failed"
+    Run "admin" $gitInstallerEXE "$silent_arg /COMPONENTS='icons,icons\desktop,ext,ext\shellhere,ext\guihere,gitlfs,assoc,assoc_sh' $gfw_str_opts" "Git for Windows installation failed"
 
     #
     # Setup "Enterprise Config for Git"
@@ -224,7 +263,7 @@ CREDENTIALS_BASE64=`$3 BRANCH=$branch git $kitID
 "@
     Set-Content $script $content -Encoding ASCII
     $params = @"
--c "/$($script.Replace(':', '').Replace('\','/')) '$username' '$password' '$auth'"
+-c "/'$($script.Replace(':', '').Replace('\','/'))' '$username' '$password' '$auth'"
 "@
     $env:Path = "$env:programfiles\Git\bin;C:\Program Files\Git\bin;" + $env:Path
     Run "user" sh.exe $params "'git $kitID' setup failed"

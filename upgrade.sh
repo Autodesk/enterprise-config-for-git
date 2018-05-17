@@ -14,4 +14,4 @@ SERVER=$(git config --global adsk.github.server)
 [ -z "$SERVER" ] && error_exit 'Server must not be empty!'
 TOKEN="$(get_credentials $SERVER $USERNAME)"
 
-install_git "$USERNAME" "$TOKEN"
+install_git "$USERNAME" "$TOKEN" "$@"

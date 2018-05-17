@@ -40,6 +40,9 @@ Write-Host "Installing $company Git Bundle ..."
 Write-Host ""
 Write-Host "###########################################################"
 Write-Host ""
+Write-Host "Attention: The installer does not yet work with two-factor"
+Write-Host "           authentication. Check your status here:"
+Write-Host "           https://$server/settings/security"
 Write-Host ""
 
 # Get credentials
@@ -69,14 +72,17 @@ $webClient.Headers.add('Authorization', "Basic ${auth}")
 try
 {
     # Download install helper script
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
     $installScript=$webClient.DownloadString($installurl)
 
     # Make install helper functions available
     . ([ScriptBlock]::Create($installScript))
 
-    & Install-Git-For-Windows $username $password $auth $server $repo $branch $kit_id
+    & Install-Git-For-Windows -username $username -password $password `
+        -auth $auth -server $server -repo $repo -kitID $kit_id -branch $branch `
+        @args
 }
-catch [System.Net.WebException]
+catch
 {
     Write-Host ""
     Write-Host "`Downloading the install script failed!"
@@ -84,7 +90,9 @@ catch [System.Net.WebException]
     Write-Host "Please check the following and retry:"
     Write-Host "    1. Verify your password"
     Write-Host "    2. Ensure your user name does NOT contain 'ads/'"
-    Write-Host "    3. Check network connectivity to $server`n"
+    Write-Host "    3. Check network connectivity to $server"
+    Write-Host "    4. Ensure at least PowerShell 3.0 is installed on Windows 7:"
+    Write-Host "       https://www.microsoft.com/en-us/download/details.aspx?id=34595`n"
     Write-Host "Press any key to continue ..."
     $x = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }

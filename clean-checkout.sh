@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #/
-#/ Clean checkout of a branch/tag/commit including all submodules.
+#/ Clean checkout of a branch/tag/commit including all submodules
 #/ Attention: This is going to delete all local changes!
 #/
 #/ Usage: git $KIT_ID clean-checkout <options> <branch>

@@ -14,7 +14,7 @@ function credential_helper_parameters {
 function install_git_lfs {
     local KIT_PATH=$1
     local VERSION=$2
-    local GIT_LFS_SHA256=95bcdab9897338fd923ad3a792010d6e817114e8c3b444e1e245889b6cd68888
+    local GIT_LFS_SHA256=6755e109a85ffd9a03aacc629ea4ab1cbb8e7d83e41bd1880bf44b41927f4cfe
 
     # Assigned in fetch_git_lfs
     local DOWNLOAD_FILE
@@ -67,6 +67,6 @@ function install_git {
         sudo apt-get -y remove git
         sudo apt-get -y install git
     else
-        echo "O/S not (yet) supported by Source Control Solutions team. Please ping us on #tech-git in Slack."
+        error_exit "O/S not (yet) supported."
     fi
 }

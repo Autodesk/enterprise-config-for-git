@@ -133,10 +133,10 @@ function calc_md5sum () {
 function check_sha256 () {
     local SHA256=$1
     local FILEPATH=$2
-    if has_command shasum; then
-        echo "$SHA256  $FILEPATH" | shasum --status --portable --algorithm 256 --check -
-    elif has_command sha256sum; then
+    if has_command sha256sum; then
         echo "$SHA256  $FILEPATH" | sha256sum --status --check -
+    elif has_command shasum; then
+        echo "$SHA256  $FILEPATH" | shasum --status --portable --algorithm 256 --check -
     else
         error_exit 'No SHA256 tool found.'
     fi
@@ -164,11 +164,16 @@ function fetch_git_lfs() {
     fi
 }
 
+function git_version_greater_equal () {
+    local VERSION=$1
+    git --version | perl -pse "$VERSION_PARSER" -- -min=$VERSION > /dev/null
+}
+
 function check_git () {
-    if ! (git --version | perl -pse "$VERSION_PARSER" -- -min=$MINIMUM_REQUIRED_GIT_VERSION > /dev/null); then
+    if ! git_version_greater_equal $MINIMUM_REQUIRED_GIT_VERSION ; then
         error_exit "Git version $MINIMUM_REQUIRED_GIT_VERSION is the minimum requirement (you have $(git --version))."
-    elif ! (git --version | perl -pse "$VERSION_PARSER" -- -min=$MINIMUM_ADVISED_GIT_VERSION > /dev/null); then
-        warning "You Git version is outdated. Please run 'git $KIT_ID upgrade'!"
+    elif ! git_version_greater_equal $MINIMUM_ADVISED_GIT_VERSION ; then
+        warning "Your Git version is outdated. Please run 'git $KIT_ID upgrade'!"
     fi
 }
 
@@ -205,11 +210,16 @@ function rewrite_ssh_to_https_if_required () {
 
     # Check if we can access the host via SSH
     set +e
-    ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no git@$HOST > /dev/null 2>&1
+    ssh -T \
+        -o BatchMode=yes \
+        -o ConnectTimeout=5 \
+        -o StrictHostKeyChecking=no \
+        -o UserKnownHostsFile=/dev/null \
+        git@$HOST > /dev/null 2>&1
     SSH_EXIT=$?
     set -e
 
-    # SSH exists with "1" in case the user successfully authenticated because
+    # SSH exits with "1" in case the user successfully authenticated because
     # GitHub does not provide shell access.
     if [ "$SSH_EXIT" -ne 1 ]; then
         echo "Configuring HTTPS URL rewrite for $HOST..."
@@ -227,6 +237,10 @@ function rewrite_ssh_to_https_if_required () {
     fi
 }
 
+function set_vanilla_environment () {
+    git config --global --unset-all commit.template 2>/dev/null
+}
+
 function error_exit () {
     echo -e "\n$(tput setaf 1)###\n### ERROR\n###\n> $(tput sgr0)$1\n" >&2
     echo -e "$(tput setaf 1)$ERROR_HELP_MESSAGE$(tput sgr0)\n" >&2
@@ -239,6 +253,14 @@ function warning () {
 
 function print_success () {
     echo -e "\n$(tput setaf 2)$1$(tput sgr0)\n"
+}
+
+# Parse the header of a script and print it to stdout
+function print_usage()
+{
+    printf "$(grep '^#/' "$KIT_PATH/$(basename "$0")" |
+        cut -c 4- |
+        sed "s/\$KIT_ID/$KIT_ID/")\n\n"
 }
 
 ###############################################################################

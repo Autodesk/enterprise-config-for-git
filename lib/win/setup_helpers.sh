@@ -1,5 +1,5 @@
 function open_url () {
-    explorer "$1"
+	cmd //c start "${@//&/^&}"
 }
 
 function one_ping () {
@@ -19,7 +19,7 @@ function install_git_lfs () {
     local VERSION=$2
     export GIT_LFS_INSTALLER_LIB="$KIT_PATH/install-helper.ps1"
     export GIT_LFS_INSTALLER_URL="https://github.com/git-lfs/git-lfs/releases/download/v$VERSION/git-lfs-windows-$VERSION.exe"
-    export GIT_LFS_INSTALLER_SHA256='0f70b16ba9a42fab51c72a1a8e02a30971bc6921f485fb940547b41eab3dc7dd'
+    export GIT_LFS_INSTALLER_SHA256='f11ee43eae6ae33c258418e6e4ee221eb87d2e98955c498f572efa7b607f9f9b'
 
     # Previous versions of this installer installed Git LFS into the wrong
     # directory. The current installer wouldn't update these files. If they
@@ -41,5 +41,8 @@ function install_git () {
     INSTALLBAT=$(mktemp -t "git-install-XXXXXXX.bat")
     cp "$KIT_PATH/install.bat" "$INSTALLBAT"
 
-    start "" "$INSTALLBAT" $TOKEN $USERNAME
+    # remove the first two arguments from the arguments array so that they
+    # can be re-arranged.
+    shift 2
+    start "" "$INSTALLBAT" -password $TOKEN -username $USERNAME "$@"
 }

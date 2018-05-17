@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #/
-#/ Download a Git object from GitHub via API.
+#/ Download a Git object from GitHub via API
 #/
 #/ Usage: git $KIT_ID download-blob [org/repo] [git-object-id]
 #/

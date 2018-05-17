@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #/
-#/ Remove all Git credentials from your machine.
+#/ Remove all Git credentials from your machine
 #/
 #/ Usage: git $KIT_ID teardown
 #/
@@ -14,6 +14,8 @@ function remove_credentials () {
     local HELPER=$(credential_helper)
     printf "protocol=https\nhost=$HOST\n\n" | git credential-$HELPER erase
 }
+
+git config --global --unset-all adsk.github.account 2>/dev/null
 
 remove_credentials '<< YOUR GITHUB SERVER >>>'
 

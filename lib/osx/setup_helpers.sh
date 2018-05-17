@@ -18,7 +18,7 @@ function _macports_has_port() {
 
 function _managerless_lfs_install() {
     local VERSION=$1
-    local GIT_LFS_SHA256=1da31fa2cc75fe56486cbaf371ca4d233889a8105cc9d9435284a0a7a3c87bec
+    local GIT_LFS_SHA256=b16d4b7469b1fa34e0e27bedb1b77cc425b8d7903264854e5f18b0bc73576edb
 
     # Assigned in fetch_git_lfs
     local DOWNLOAD_FILE
