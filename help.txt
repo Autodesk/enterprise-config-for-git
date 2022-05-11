@@ -1,0 +1,43 @@
+###
+### Enterprise Config
+###  repo:  https://eos2git.cec.lab.emc.com/DevEnablement/enterprise-config-for-git
+###
+
+# Setup
+Description: Configures your machine to use Git.
+Command:     git emc
+
+# Teardown
+Description: Removes all Git credentials from your machine.
+Command:     git emc teardown
+
+# Clone
+Description: Fast clone a repository with Git LFS files and submodules.
+Command:     git emc clone <repository URL> [<target directory>]
+
+# Pull
+Description: Pull changes from a repository and all its submodules.
+Command:     git emc pull
+
+# Deleted
+Description: list the files that have been deleted from the current repository
+Command:     git emc show-deleted [-h] [<path/to/file>]
+Example:     git emc show-deleted
+
+# Help
+Description: This help page.
+Command:     git emc help
+
+# Version
+Description: Print version information.
+Command:     git emc version
+
+# Paste
+Description: upload a file as a GitHub gist
+Command:     git emc paste <path/to/file>
+
+---
+You can easily add your own commands. See https://eos2git.cec.lab.emc.com/DevEnablement/enterprise-config-for-git for details.
+
+If you run into any trouble:
+Please contact EMSD DevEnablement !

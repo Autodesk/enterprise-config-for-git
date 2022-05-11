@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-#/
-#/ Create a new repo on GitHub
-#/
-#/ Usage: git $KIT_ID mkrepo my_new_repo
-#/
+#
+# Create a new repo on GitHub
+#
+# Usage: git <KIT_ID> mkrepo my_new_repo
+#
 
 set -e
 

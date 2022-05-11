@@ -2,7 +2,7 @@
 # Utility functions
 ###############################################################################
 VERSION_PARSER='use version; my ($version) = $_ =~ /([0-9]+([.][0-9]+)+)/; if (version->parse($version) lt version->parse($min)) { exit 1 };'
-CURL_RETRY_OPTIONS='--connect-timeout 5 --max-time 10 --retry 5 --retry-delay 0 --retry-max-time 60'
+CURL_RETRY_OPTIONS='--connect-timeout 5 --max-time 10 --retry 5 --retry-delay 0 --retry-max-time 60 -k'
 
 function print_kit_header () {
     cat << EOM
@@ -60,12 +60,12 @@ function is_ghe_token () {
     echo "$1" | perl -ne 'exit 1 if not /\b[0-9a-f]{40}\b/'
 }
 
-function is_ghe_token_with_user_email_scope () {
+function is_ghe_token_with_user_scope () {
     local HOST=$1
     local USER=$2
     local PASSWORD="$3"
-    curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" https://$HOST/api/v3/user -I \
-        | grep '^X-OAuth-Scopes:.*user:email.*' > /dev/null
+    curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" https://$HOST/api/v3/users -I \
+        | grep '^X-OAuth-Scopes:.*user.*' > /dev/null
 }
 
 function get_ghe_name () {
@@ -80,8 +80,8 @@ function get_ghe_email () {
     local HOST=$1
     local USER=$2
     local PASSWORD="$3"
-    curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" https://$HOST/api/v3/user/emails \
-        | perl -ne 'print "$1\n" if m%^\s*"email":\s*"(.*\@yourcompany\.com)"[,]?$%i' \
+    curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" https://$HOST/api/v3/user \
+        | perl -ne 'print "$1\n" if m%^\s*"email":\s*"(.*)"[,]?$%i' \
         | head -n 1
 }
 
@@ -95,28 +95,41 @@ function create_ghe_token () {
     local FINGERPRINT=$(calc_md5sum "$COMPUTER_NAME")
     local TOKEN_URL="https://$HOST/api/v3/authorizations/clients/$CLIENT_ID/$FINGERPRINT"
 
-    # Query all tokens of the current user and try to find a token for the
-    # current machine
-    #
-    # ATTENTION: This only queries up to 100 tokens. If an account is used on
-    # more machines then we need to implement proper pagination.
-    # c.f. https://developer.github.com/v3/guides/traversing-with-pagination/
-    TOKEN_ID=$(curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" "https://$HOST/api/v3/authorizations?per_page=100" \
+    # Query all tokens of the current user and try to find a token for the current machine
+    TOKEN_ID=$(curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" https://$HOST/api/v3/authorizations \
         | perl -pe 'chomp' \
         | perl -sne 'print "$1\n" if m%^.*{\s*"id"\:\s+(\d+).*?"fingerprint":\s*"$fingerprint".*%i' -- -fingerprint=$FINGERPRINT \
     )
 
     # If a token for the current machine was found then delete it
-    if [ -n "$TOKEN_ID" ]; then
+    if [ -n $TOKEN_ID ]; then
         curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" -X DELETE https://$HOST/api/v3/authorizations/$TOKEN_ID
     fi
 
     # Request a new token
     curl $CURL_RETRY_OPTIONS --silent --fail --user "$USER:$PASSWORD" -X PUT \
-            --data "{\"scopes\":[\"repo\",\"gist\",\"user:email\"], \"note\":\"Enterprise Config ($COMPUTER_NAME)\", \"client_secret\":\"$CLIENT_SECRET\"}" \
+            --data "{\"scopes\":[\"repo\",\"gist\"], \"note\":\"Enterprise Config ($COMPUTER_NAME)\", \"client_secret\":\"$CLIENT_SECRET\"}" \
             $TOKEN_URL \
         | perl -ne 'print "$1\n" if m%^\s*"token":\s*"([0-9a-f]{40})"[,]?$%i' \
         | head -n 1
+}
+
+function check_md5sum () {
+    local MD5=$1
+    local FILEPATH=$2
+
+    if has_command md5sum; then
+        # Exit with the exit code of this command.
+        md5sum --check - <<EOM > /dev/null
+$MD5  $FILEPATH
+EOM
+    elif has_command md5; then
+        # OS X doesn't ship with md5sum :-/
+        local CHECKSUM=$(md5 -q "$FILEPATH")
+        [[ $MD5 == $CHECKSUM ]]
+    else
+        error_exit "No MD5 tool found. Can't verify file: $FILEPATH"
+    fi
 }
 
 function calc_md5sum () {
@@ -130,22 +143,10 @@ function calc_md5sum () {
     fi
 }
 
-function check_sha256 () {
-    local SHA256=$1
-    local FILEPATH=$2
-    if has_command sha256sum; then
-        echo "$SHA256  $FILEPATH" | sha256sum --status --check -
-    elif has_command shasum; then
-        echo "$SHA256  $FILEPATH" | shasum --status --portable --algorithm 256 --check -
-    else
-        error_exit 'No SHA256 tool found.'
-    fi
-}
-
 function fetch_git_lfs() {
     local VERSION=$1
     local SRC_FILE=$2
-    local GIT_LFS_SHA256=$3
+    local GIT_LFS_CHECKSUM=$3
 
     local SRC_URL=https://github.com/github/git-lfs/releases/download/v$VERSION/$SRC_FILE
 
@@ -158,22 +159,15 @@ function fetch_git_lfs() {
         error_exit "Git LFS download failed ($SRC_URL)."
     fi
 
-    if ! check_sha256 $GIT_LFS_SHA256 "$DOWNLOAD_FILE"; then
+    if ! check_md5sum $GIT_LFS_CHECKSUM "$DOWNLOAD_FILE"; then
         rm -f "$DOWNLOAD_FILE"
         error_exit "Git LFS does not have expected contents ($SRC_URL)." >&2
     fi
 }
 
-function git_version_greater_equal () {
-    local VERSION=$1
-    git --version | perl -pse "$VERSION_PARSER" -- -min=$VERSION > /dev/null
-}
-
 function check_git () {
-    if ! git_version_greater_equal $MINIMUM_REQUIRED_GIT_VERSION ; then
-        error_exit "Git version $MINIMUM_REQUIRED_GIT_VERSION is the minimum requirement (you have $(git --version))."
-    elif ! git_version_greater_equal $MINIMUM_ADVISED_GIT_VERSION ; then
-        warning "Your Git version is outdated. Please run 'git $KIT_ID upgrade'!"
+    if !(git --version | perl -pse "$VERSION_PARSER" -- -min=$MINIMUM_GIT_VERSION > /dev/null); then
+        error_exit "Git version $MINIMUM_GIT_VERSION required."
     fi
 }
 
@@ -187,12 +181,17 @@ EOM
 }
 
 function check_git_lfs () {
-    if ! (has_command git-lfs) ||
-       ! (git-lfs 2>&1 | grep "git-lfs" > /dev/null) ||
-       ! (git-lfs version | perl -pse "$VERSION_PARSER" -- -min="$MINIMUM_GIT_LFS_VERSION" > /dev/null)
+    if (has_command git-lfs) then
+       if !(git-lfs version | perl -pse "$VERSION_PARSER" -- -min=$MINIMUM_GIT_LFS_VERSION > /dev/null) then
+            error_exit "Git lfs version $MINIMUM_GIT_LFS_VERSION required" 
+	fi
+	
+    elif !(has_command git-lfs) ||
+       !(git-lfs 2>&1 | grep "git-lfs" > /dev/null) ||
+       !(git-lfs version | perl -pse "$VERSION_PARSER" -- -min=$MINIMUM_GIT_LFS_VERSION > /dev/null)
     then
-        if [ "$1" != "no-install" ]; then
-            install_git_lfs "$KIT_PATH" "$MINIMUM_GIT_LFS_VERSION"
+        if [[ $1 != no-install ]]; then
+            install_git_lfs "$KIT_PATH" $MINIMUM_GIT_LFS_VERSION
         else
             git_lfs_error_exit
         fi
@@ -210,18 +209,13 @@ function rewrite_ssh_to_https_if_required () {
 
     # Check if we can access the host via SSH
     set +e
-    ssh -T \
-        -o BatchMode=yes \
-        -o ConnectTimeout=5 \
-        -o StrictHostKeyChecking=no \
-        -o UserKnownHostsFile=/dev/null \
-        git@$HOST > /dev/null 2>&1
+    ssh -T -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no git@$HOST > /dev/null 2>&1
     SSH_EXIT=$?
     set -e
 
-    # SSH exits with "1" in case the user successfully authenticated because
+    # SSH exists with "1" in case the user successfully authenticated because
     # GitHub does not provide shell access.
-    if [ "$SSH_EXIT" -ne 1 ]; then
+    if [[ $SSH_EXIT -ne 1 ]]; then
         echo "Configuring HTTPS URL rewrite for $HOST..."
         set +e
         git config --global --remove-section url."https://$HOST/" > /dev/null 2>&1
@@ -237,31 +231,20 @@ function rewrite_ssh_to_https_if_required () {
     fi
 }
 
-function set_vanilla_environment () {
-    git config --global --unset-all commit.template 2>/dev/null
-}
-
 function error_exit () {
-    echo -e "\n$(tput setaf 1)###\n### ERROR\n###\n> $(tput sgr0)$1\n" >&2
-    echo -e "$(tput setaf 1)$ERROR_HELP_MESSAGE$(tput sgr0)\n" >&2
+    echo -e "\n$(tput setaf 1)###\n### ERROR\n###\n> $(tput sgr 0)$1\n" >&2
+    echo -e "$(tput setaf 1)$ERROR_HELP_MESSAGE$(tput sgr 0)\n" >&2
     exit 1
 }
 
 function warning () {
-    echo -e "\n$(tput setaf 3)###\n### WARNING\n###\n> $(tput sgr0)$1\n" >&2
+    echo -e "\n$(tput setaf 3)###\n### WARNING\n###\n> $(tput sgr 0)$1\n" >&2
 }
 
 function print_success () {
-    echo -e "\n$(tput setaf 2)$1$(tput sgr0)\n"
+    echo -e "\n$(tput setaf 2)$1$(tput sgr 0)\n"
 }
 
-# Parse the header of a script and print it to stdout
-function print_usage()
-{
-    printf "$(grep '^#/' "$KIT_PATH/$(basename "$0")" |
-        cut -c 4- |
-        sed "s/\$KIT_ID/$KIT_ID/")\n\n"
-}
 
 ###############################################################################
 # Load platform-specifics
@@ -270,8 +253,56 @@ function install_git_lfs () {
     git_lfs_error_exit
 }
 
-function install_git () {
-    error_exit "Installing/Upgrading Git on your platform is not supported, yet. $ERROR_HELP_MESSAGE"
+function Generate_SSH_key() {
+    local USER=$3
+    local PASSWORD="$4"
+    local HOST="$5"
+    if [[ ! -e ~/.ssh/id_rsa_GIT ]]; then
+     echo "Generating New SSH key ..."
+    ssh-keygen -f "${HOME}/.ssh/id_rsa_GIT" -t rsa -b 4096 -C "${2}" -N '' ||  error_exit "ssh keygen failed with status $?" >&2
+    sslpub="$(cat ${HOME}/.ssh/id_rsa_GIT.pub |tail -1)"
+    git_ssl_keyname="$(hostname)-$(date +%Y%m%d%H%M%S)"
+    git_api_addkey="https://${HOST}/api/v3/user/keys"
+
+    curl -H "PRIVATE-TOKEN: ${4}" -H "Content-Type: application/json" -X POST --user "$USER:$PASSWORD" -d "{\"title\":\"${git_ssl_keyname}\",\"key\":\"${sslpub}\"}" ${git_api_addkey} ||  error_exit "curl POST failed with status $?" >&2
+   else
+     echo "Using existing SSH Key ${HOME}/.ssh/id_rsa_GIT"
+   fi
+   
+}
+
+function Add_Existing_ssh_key() {
+ eval `ssh-agent` > /dev/null
+ ssh-add $HOME/.ssh/id_rsa_GIT ||  error_exit "ssh-add failed with status $?" >&2 
+}
+
+function Add_ssh_config() {
+  local HOST="$1"  
+  local write_config=0;
+
+if [[ -e $HOME/.ssh/config ]]; then
+ while read LINE; do
+   if echo "$LINE" | grep -x "Host ${HOST}"; then
+    break
+   else
+    write_config=1;
+   fi
+ done < $HOME/.ssh/config
+else
+ write_config=1;
+fi
+
+if [[ $(uname -s) == MINGW??_NT* ]]; then
+  export USER=$USERNAME;
+fi
+
+if [[ $write_config -ne 0 ]];then
+   cat >> $HOME/.ssh/config <<EOL
+   Host ${HOST}
+    IdentityFile ${HOME}/.ssh/id_rsa_GIT
+    User ${USER}
+EOL
+fi
 }
 
 function credential_helper_parameters () {
@@ -282,10 +313,33 @@ function one_ping () {
     ping -c 1 $1
 }
 
+# Provide nicely formatted status messages, to stick out amongst the noise
+declare red=$(tput setaf 1)
+declare reverse=$(tput smso)
+declare normal=$(tput sgr0)
+
+function status() {
+    printf '\n'
+    say "${reverse}${red}===${normal}${reverse} $* ${red}===${normal}"
+    printf '\n'
+}
+
+function git() {
+    [[ $GIT_TRACE ]] && say "Executing git command: $(printf ' %q' git "$@")" >&2
+    command git "$@"
+}
+
 case $(uname -s) in
-      MSYS_NT-*) . "$KIT_PATH/lib/win/setup_helpers.sh";;
     MINGW??_NT*) . "$KIT_PATH/lib/win/setup_helpers.sh";;
+       MSYS_NT*) . "$KIT_PATH/lib/win/setup_helpers.sh";;
          Darwin) . "$KIT_PATH/lib/osx/setup_helpers.sh";;
           Linux) . "$KIT_PATH/lib/lnx/setup_helpers.sh";;
               *) . "$KIT_PATH/lib/other/setup_helpers.sh";;
 esac
+
+function die() {
+    printf "${red}ERROR${normal}: %s\\n" "$@" >&2
+    [[ $(type -t die_handler 2>/dev/null) = function ]] && die_handler
+    exit 1
+}
+

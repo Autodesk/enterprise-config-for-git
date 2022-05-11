@@ -18,11 +18,13 @@ function _macports_has_port() {
 
 function _managerless_lfs_install() {
     local VERSION=$1
-    local GIT_LFS_SHA256=b16d4b7469b1fa34e0e27bedb1b77cc425b8d7903264854e5f18b0bc73576edb
+    local GIT_LFS_CHECKSUM=e7048a1bcd89f7928598a246501926b5
+    # Run this to calculate the hash for a new version:
+    # export V="1.1.1"; curl --location https://github.com/github/git-lfs/releases/download/v$V/git-lfs-darwin-amd64-$V.tar.gz | md5
 
     # Assigned in fetch_git_lfs
     local DOWNLOAD_FILE
-    fetch_git_lfs $VERSION git-lfs-darwin-amd64-$VERSION.tar.gz $GIT_LFS_SHA256
+    fetch_git_lfs $VERSION git-lfs-darwin-amd64-$VERSION.tar.gz $GIT_LFS_CHECKSUM
 
     local EXTRACT_FOLDER=$(mktemp -d -t gitlfs_extract)
     if ! tar -xvf "$DOWNLOAD_FILE" -C "$EXTRACT_FOLDER"; then
@@ -32,7 +34,7 @@ function _managerless_lfs_install() {
     fi
 
     for f in $(ls "$EXTRACT_FOLDER/"); do
-        if [ -x "$EXTRACT_FOLDER/$f/install.sh" ]; then
+        if [[ -x "$EXTRACT_FOLDER/$f/install.sh" ]]; then
             local PFX=$(dirname $(dirname $(which git)))
             if ( has_command git-lfs ); then
                 # reuse existing install folder if this is an update
@@ -56,11 +58,11 @@ function _managerless_lfs_install() {
         fi
     done
 
-    if [ -e "$DOWNLOAD_FILE" ]; then
+    if [[ -e $DOWNLOAD_FILE ]]; then
         rm -f "$DOWNLOAD_FILE"
     fi
 
-    if [ -e "$EXTRACT_FOLDER" ]; then
+    if [[ -e $EXTRACT_FOLDER ]]; then
         rm -rf "$EXTRACT_FOLDER"
     fi
 }
@@ -68,44 +70,44 @@ function _managerless_lfs_install() {
 function install_git_lfs() {
     local KIT_PATH=$1
     local VERSION=$2
-    local PKGMGR
-    local COMMAND=install
+    local METHOD
+    local ACTION=install
 
     if _brew_has_formulae git-lfs; then
         # If git-lfs has been installed via brew before, update using that
-        PKGMGR=brew
-        COMMAND=upgrade
+        METHOD=brew
+        ACTION=reinstall
     elif _macports_has_port git-lfs; then
         # If git-lfs has been installed via macports before, update using that
-        PKGMGR=port
-        COMMAND=upgrade
+        METHOD=port
+        ACTION=upgrade
     elif _brew_has_formulae git; then
         # if git has been installed via brew, install git-lfs with that as well
-        PKGMGR=brew
+        METHOD=brew
     elif _macports_has_port git; then
         # if git has been installed via macports, install git-lfs with that as well
-        PKGMGR=port
+        METHOD=port
     elif ! has_command git-lfs; then
         # If there is no git-lfs already installed
         # and we have a package manager, then why not use it, even if
         # we have been using the stock apple git
         if has_command port; then
-            PKGMGR=port
+            METHOD=port
         elif has_command brew; then
-            PKGMGR=brew
+            METHOD=brew
         fi
     fi
 
-    case $PKGMGR in
+    case $METHOD in
         brew )
             echo "Installing/Updating Git LFS using brew."
             brew update
-            brew $COMMAND git-lfs
+            brew $ACTION git-lfs
             ;;
         port )
             echo "Installing/Updating Git LFS using MacPorts. Provide credentials as requested."
             sudo port sync
-            sudo port $COMMAND git-lfs
+            sudo port $ACTION git-lfs
             ;;
         * )
             _managerless_lfs_install $VERSION
@@ -113,43 +115,4 @@ function install_git_lfs() {
     esac
 
     check_git_lfs no-install
-}
-
-function install_git () {
-    local PKGMGR
-    local COMMAND
-
-    if _brew_has_formulae git; then
-        # If Git has been installed via `brew` before, update using that
-        PKGMGR=brew
-        COMMAND=upgrade
-    elif _macports_has_port git-lfs; then
-        # If Git has been installed via macports before, update using that
-        PKGMGR=port
-        COMMAND=upgrade
-    elif has_command brew; then
-        # If `brew` is installed, then use it to install Git
-        PKGMGR=brew
-        COMMAND=install
-    elif has_command port; then
-        # If `port` is installed, then use it to install Git
-        PKGMGR=port
-        COMMAND=install
-    else
-        warning "No macOS package manager was found!"
-        echo "We recommend to install Homebrew: https://brew.sh/"
-    fi
-
-    case $PKGMGR in
-        brew )
-            echo "Installing/Updating Git using brew."
-            brew update
-            brew $COMMAND git
-            ;;
-        port )
-            echo "Installing/Updating Git using MacPorts. Provide credentials as requested."
-            sudo port sync
-            sudo port $COMMAND git
-            ;;
-    esac
 }

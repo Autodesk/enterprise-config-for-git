@@ -2,21 +2,36 @@
 # Configure these variables. See README.md for details.
 ###############################################################################
 
-KIT_ID='adsk'  # This must match the alias defined in config.include
+# Define the name of the setup command for your company
+# Attention: This must match the alias defined in config.include!
+KIT_ID='bob'
 
-GITHUB_SERVER='git.yourcompany.com'
-KIT_ORG_REPO='yourorg/enterprise-config-for-git'
-KIT_TESTFILE="https://$GITHUB_SERVER/api/v3"
-KIT_REMOTE_URL="https://$GITHUB_SERVER/$KIT_ORG_REPO.git"
-KIT_CLIENT_ID=<< YOUR OAUTH CLIENT ID >>
-KIT_CLIENT_SECRET=<< YOUR OAUTH SECRET >>
+# Define your GitHub Enterprise server
+GITHUB_SERVER='github.com'
+
+# Define the path of this repo on your GitHub Enterprise server
+KIT_ORG_REPO='ballab1/enterprise-config-for-git'
+
+# Register an OAuth application on your GitHub Enterprise server:
+# https://developer.github.com/v3/oauth/
+KIT_CLIENT_ID='8b6c07fe55f64c7cbc5d'
+KIT_CLIENT_SECRET='8b6adba6caff9f0cc0d40c8a27545860a26f95b9'
+
+# Define the link to your source code policy
 KIT_SOURCE_CODE_POLICY_URL=https://yourcompany.com/policy
 
-ERROR_HELP_MESSAGE="Please contact admin@yourcompany.com!"
+# Define a message for the users in case of errors
+ERROR_HELP_MESSAGE="Please contact EMSD DevEnablement !"
 
-# Versions
-INSTALL_UPGRADE_GIT_VERSION=2.17.0          # On update make sure to update strings in install-helper.ps1, too!
-MINIMUM_ADVISED_GIT_VERSION=2.13.5
-MINIMUM_REQUIRED_GIT_VERSION=1.8.3.1
+# Default repo owner when none is provided
+DEFAULT_OWNER=PIE
 
-MINIMUM_GIT_LFS_VERSION=2.3.4               # On update make sure to update $GIT_LFS_SHA256 in lib/*/setup_helpers.sh, too!
+# Default development release when none is provided
+DEFAULT_RELEASE=harrier
+
+###############################################################################
+# No changes beyond this point
+###############################################################################
+
+KIT_TESTFILE="https://$GITHUB_SERVER/$KIT_ORG_REPO"
+KIT_REMOTE_URL="https://$GITHUB_SERVER/$KIT_ORG_REPO.git"

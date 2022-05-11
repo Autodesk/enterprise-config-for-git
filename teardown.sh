@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-#/
-#/ Remove all Git credentials from your machine
-#/
-#/ Usage: git $KIT_ID teardown
-#/
+#
+# Remove credentials stored using the credential helpers
+#
+# Usage: git <KIT_ID> teardown
+#
 set -e
 
 KIT_PATH=$(dirname "$0")
+. "$KIT_PATH/enterprise.constants"
 . "$KIT_PATH/lib/setup_helpers.sh"
 
 function remove_credentials () {
@@ -15,9 +16,7 @@ function remove_credentials () {
     printf "protocol=https\nhost=$HOST\n\n" | git credential-$HELPER erase
 }
 
-git config --global --unset-all adsk.github.account 2>/dev/null
-
-remove_credentials '<< YOUR GITHUB SERVER >>>'
+remove_credentials "$GITHUB_SERVER"
 
 print_kit_header
 print_success 'Git credentials successfully removed!'

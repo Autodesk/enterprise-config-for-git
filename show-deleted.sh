@@ -1,21 +1,36 @@
 #!/bin/sh
-#/
-#/ Show the files that have been deleted from the current branch
-#/
-#/ Usage: git $KIT_ID show-deleted [-h] [path]
-#/
-#/     path    - relative path to the directory to report on
-#/
-#/ OPTIONS
-#/     -h      - Display this help and exit
-#/
+
+# Copyright 2016 Autodesk Inc. http://www.autodesk.com
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 KIT_PATH=$(dirname "$0")
 . "$KIT_PATH/enterprise.constants"
 
 usage()
 {
-    grep '^#/' <"$0" | cut -c 4- | sed "s/\$KIT_ID/$KIT_ID/"
+    cat << EOM
+Usage: git $KIT_ID show-deleted [-h] [path]
+
+A utility to list the files that have been deleted from the current
+branch.
+
+    path    - relative path to the directory to report on
+
+OPTIONS
+    -h      - Display this help and exit
+
+EOM
 }
 
 while getopts ":h" OPTION; do
@@ -28,7 +43,7 @@ done
 shift $(( $OPTIND - 1 ))
 
 # Make sure the argument list is valid
-if [ $# -gt 1 ]; then
+if [[ $# > 1 ]]; then
     usage; exit 1;
 fi
 
@@ -36,7 +51,7 @@ fi
 if git-rev-parse --is-inside-worktree > /dev/null; then
 
     RELATIVE_REPO_PATH="${GIT_PREFIX:-.}"
-    if [ -n "$1" ]; then
+    if [[ -n $1 ]]; then
         RELATIVE_REPO_PATH="$RELATIVE_REPO_PATH/$1"
     fi
 

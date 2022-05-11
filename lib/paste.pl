@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
 
+use 5.010;
 use strict;
 use warnings;
-use feature qw{ say };
 use Getopt::Long;
 use JSON::PP;
 use Pod::Usage;
@@ -13,7 +13,7 @@ my %options;
 GetOptions(
     \%options,   "--description=s", "--help",    "--name=s",
     "--verbose", "--user=s",        "--token=s", "--server=s",
-    "--public"
+    "--private"
 ) or pod2usage( "Try '$0 --help' for more information.", -exitval => 1 );
 
 run( \%options, @ARGV );
@@ -58,12 +58,12 @@ sub collect_files {
 
 sub post {
     my ( $opts, $files ) = @_;
-    my $url
-        = "https://"
-        . $opts->{user} . ":"
-        . $opts->{token} . '@'
-        . $opts->{server}
-        . "/api/v3/gists";
+    my $url =
+        "https://"
+      . $opts->{user} . ":"
+      . $opts->{token} . '@'
+      . $opts->{server}
+      . "/api/v3/gists";
 
     say $url if ( $opts->{verbose} );
 
@@ -73,18 +73,18 @@ sub post {
         $data->{"description"} = $opts->{description};
     }
 
-    if ( defined( $opts->{public} ) ) {
-        $data->{"public"} = JSON::PP::true;
+    if ( defined( $opts->{private} ) ) {
+        $data->{"public"} = JSON::PP::false;
     }
     else {
-        $data->{"public"} = JSON::PP::false;
+        $data->{"public"} = JSON::PP::true;
     }
 
     my $json = encode_json($data);
     say $json if ( $opts->{verbose} );
 
-    my ( $fh, $filename )
-        = tempfile( "git-adsk-gist-XXXXX", TMPDIR => 1, UNLINK => 1 );
+    my ( $fh, $filename ) =
+      tempfile( "git-adsk-gist-XXXXX", TMPDIR => 1, UNLINK => 1 );
 
     print $fh $json;
 
@@ -109,9 +109,9 @@ paste.pl - Uploads files to GitHub's gist service
 
 =head1 SYNOPSIS
 
-  git adsk paste something.c
-  echo foo | git adsk paste
-  git adsk paste --public does_not_include_secrets.c
+  git emc paste something.c
+  echo foo | git emc paste
+  git emc paste --private not_ready_for_primetime.c
 
 =head1 DESCRIPTION
 

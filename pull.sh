@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-#/
-#/ Pull changes from a repository and all its submodules
-#/
-#/ Usage: git $KIT_ID pull
-#/
+#
+# Pull Git repositories including their submodules
+#
+# Usage: git <KIT_ID> pull
+#
 set -e
 
-git pull --recurse-submodules "$@"
+git pull --recurse-submodules $@
+git submodule update --init --recursive

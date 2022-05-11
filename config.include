@@ -3,14 +3,8 @@
 # c.f. https://groups.google.com/forum/#!topic/git-for-windows/9WrSosaa4A8
     fscache = true
 
-# Enable long path support for Windows (no effect on OS X/Linux)
-# Git uses the proper API to create long paths on Windows. However, many
-# Windows applications use an outdated API that only support paths up to a
-# length of 260 characters. As a result these applications would not be able to
-# work with the longer paths properly. Keep that in mind if you run into path
-# trouble!
-# c.f. https://msdn.microsoft.com/en-us/library/aa365247(VS.85).aspx
-    longpaths = true
+[help]
+    autocorrect = 1
 
 [color]
     diff = auto
@@ -21,12 +15,23 @@
 [submodule]
     fetchJobs = 0
 
+# Configure pull to fetch-and-rebase rather than fetch-and-merge.
+# Also, prevent these rebases from inlining an existing local merge.
+# See this article for a thorough explanation:
+# https://medium.com/@porteneuve/getting-solid-at-git-rebase-vs-merge-4fa1a48c53aa#.ntv2atccl
+##[pull]
+##    rebase = preserve
+
 [rebase]
     autoStash = true
 
+# Push to a matching branch name, creating it if necessary
 [push]
-    default = simple
+    default = current
 
+# Clean up remote branches when fetching
+[fetch]
+    prune = true
 
 ###############################################################################
 # Configure Git LFS
@@ -35,104 +40,62 @@
 [lfs]
     batch = true
     ConcurrentTransfers = 10
-# If the Git LFS locking feature is used, then Git LFS will set lockable files
-# to "readonly" by default. This is implemented with a Git LFS "post-checkout"
-# hook. Git LFS can skip this hook if no file is locked. However, Git LFS needs
-# to traverse the entire tree to find all ".gitattributes" and check for locked
-# files. In a large tree (e.g. >20k directories, >300k files) this can take a
-# while. Instruct Git LFS to not set lockable files to "readonly". This skips
-# the "post-checkout" entirely and speeds up Git LFS for large repositories.
-    SetLockableReadonly = false
 
 [lfs "transfer"]
     maxretries = 10
 
 [filter "lfs"]
-    clean = git-lfs clean -- %f
-    smudge = git-lfs smudge -- %f
+    clean = git-lfs clean %f
+    smudge = git-lfs smudge %f
     process = git-lfs filter-process
     required = true
-
-[lfs "https://git.company.com/"]
-    locksverify = true
-
-
-###############################################################################
-# Use HTTPS protocol instead of Git protocol
-###############################################################################
-[url "https://git.company.com/"]
-    insteadOf = "git://git.company.com/"
-    pushInsteadOf = "git://git.company.com/"
 
 
 ###############################################################################
 # Configure push protection to public Git hosting services
 ###############################################################################
-[url "/// ATTENTION ///   Are you sure you want to push to public github.com? To override this warning run: 'git adsk enable-public-push github.com"]
+[url "/// ATTENTION ///   Are you sure you want to push to public github.com? To override this warning run: 'git emc enable-public-push github.com"]
     pushInsteadOf = "https://github.com"
-[url "/// ATTENTION ///   Are you sure you want to push to public github.com? To override this warning run: 'git adsk enable-public-push github.com"]
+[url "/// ATTENTION ///   Are you sure you want to push to public github.com? To override this warning run: 'git emc enable-public-push github.com"]
     pushInsteadOf = "git@github.com"
-[url "/// ATTENTION ///   Are you sure you want to push to public bitbucket.org? To override this warning run: 'git adsk enable-public-push bitbucket.org"]
+[url "/// ATTENTION ///   Are you sure you want to push to public bitbucket.org? To override this warning run: 'git emc enable-public-push bitbucket.org"]
     pushInsteadOf = "https://bitbucket.org"
-[url "/// ATTENTION ///   Are you sure you want to push to public bitbucket.org? To override this warning run: 'git adsk enable-public-push bitbucket.org"]
+[url "/// ATTENTION ///   Are you sure you want to push to public bitbucket.org? To override this warning run: 'git emc enable-public-push bitbucket.org"]
     pushInsteadOf = "git@bitbucket.org"
-[url "/// ATTENTION ///   Are you sure you want to push to public gitlab.com? To override this warning run: 'git adsk enable-public-push gitlab.com"]
+[url "/// ATTENTION ///   Are you sure you want to push to public gitlab.com? To override this warning run: 'git emc enable-public-push gitlab.com"]
     pushInsteadOf = "https://gitlab.com"
-[url "/// ATTENTION ///   Are you sure you want to push to public gitlab.com? To override this warning run: 'git adsk enable-public-push gitlab.com"]
+[url "/// ATTENTION ///   Are you sure you want to push to public gitlab.com? To override this warning run: 'git emc enable-public-push gitlab.com"]
     pushInsteadOf = "git@gitlab.com"
 
 [alias]
     st=status
     br=branch
     lol = "log --pretty=oneline --abbrev-commit --graph --decorate"
-    lola = "log --pretty=oneline --abbrev-commit --graph --decorate --all"
     prlog = "log --pretty=oneline --abbrev-commit --graph --decorate --first-parent"
 
 
 ###############################################################################
 # Enterprise Config setup command
 ###############################################################################
-#
-# Jenkins Git Plugin 3.4.1 cannot handle mutplie lines in config files.
-# Therefore, we have to reformat the code below into the one line.
-#
-# adsk = "!f() { \
-#     KIT_PATH=$(dirname \"$(git config include.path)\") && \
-#     ENV=$(git config adsk.environment || true) && \
-#     COMMAND=$1 && \
-#     if [ -n \"$COMMAND\" ]; then \
-#         shift 1; \
-#     fi && \
-#     if [ \"$KIT_PATH\" = \"adsk-git\" ]; then \
-#         case $(uname -s) in \
-#             MINGW32_NT*) KIT_PATH=/mingw32/etc/adsk-git;; \
-#             MINGW64_NT*) KIT_PATH=/mingw64/etc/adsk-git;; \
-#         esac \
-#     fi && \
-#     if [ -z \"$COMMAND\" ] || [ \"$COMMAND\" = \"setup\" ]; then \
-#         TMP_SETUP=$(mktemp -t git-enterprise-kit.XXXXXX) && \
-#         cp \"$KIT_PATH/setup.sh\" \"$TMP_SETUP\" && \
-#         bash \"$TMP_SETUP\" \"$KIT_PATH\" \"$@\" && \
-#         rm \"$TMP_SETUP\"; \
-#     elif [ \"$COMMAND\" = \"install\" ]; then \
-#         echo \"Enterprise config already installed!\"; \
-#     elif [ -n \"$ENV\" ] && [ -e "$KIT_PATH/envs/$ENV/$COMMAND.sh" ]; then \
-#         bash \"$KIT_PATH/envs/$ENV/$COMMAND.sh\" \"$@\"; \
-#     elif [ -e \"$KIT_PATH/$COMMAND.sh\" ]; then \
-#         bash \"$KIT_PATH/$COMMAND.sh\" \"$@\"; \
-#     else \
-#         echo \"Enterprise Config command '$COMMAND' not found. Please contact source.control.solutions@autodesk.com or the #tech-git Slack channel.\"; \
-#     fi \
-# }; f"
-    adsk = "!f() { KIT_PATH=$(dirname \"$(git config include.path)\") && ENV=$(git config adsk.environment || true) && COMMAND=$1 && if [ -n \"$COMMAND\" ]; then     shift 1; fi && if [ \"$KIT_PATH\" = \"adsk-git\" ]; then     case $(uname -s) in         MINGW32_NT*) KIT_PATH=/mingw32/etc/adsk-git;;         MINGW64_NT*) KIT_PATH=/mingw64/etc/adsk-git;;     esac fi && if [ -z \"$COMMAND\" ] || [ \"$COMMAND\" = \"setup\" ]; then     TMP_SETUP=$(mktemp -t git-enterprise-kit.XXXXXX) &&     cp \"$KIT_PATH/setup.sh\" \"$TMP_SETUP\" &&     bash \"$TMP_SETUP\" \"$KIT_PATH\" \"$@\" &&     rm \"$TMP_SETUP\"; elif [ \"$COMMAND\" = \"install\" ]; then     echo \"Enterprise config already installed!\"; elif [ -n \"$ENV\" ] && [ -e "$KIT_PATH/envs/$ENV/$COMMAND.sh" ]; then     bash \"$KIT_PATH/envs/$ENV/$COMMAND.sh\" \"$@\"; elif [ -e \"$KIT_PATH/$COMMAND.sh\" ]; then     bash \"$KIT_PATH/$COMMAND.sh\" \"$@\"; else     echo \"Enterprise Config command '$COMMAND' not found. Please contact source.control.solutions@autodesk.com or the #tech-git Slack channel.\"; fi }; f"
-
-
-###############################################################################
-# hub command-line wrapper https://hub.github.com/
-###############################################################################
-[hub]
-    host = git.company.com
-    protocol = https
+    emc = "!f() { \
+        KIT_PATH=$(dirname \"$(git config include.path)\") && \
+        COMMAND=$1 && \
+        if [ -n \"$COMMAND\" ]; then \
+            shift 1; \
+        fi && \
+        if [ -z \"$COMMAND\" ] || [ \"$COMMAND\" = \"setup\" ]; then \
+            TMP_SETUP=$(mktemp -t git-enterprise-kit.XXXXXX) && \
+            cp \"$KIT_PATH/setup.sh\" \"$TMP_SETUP\" && \
+            bash \"$TMP_SETUP\" \"$KIT_PATH\" \"$@\" && \
+            rm \"$TMP_SETUP\"; \
+        elif [ \"$COMMAND\" = \"install\" ]; then \
+            echo \"Enterprise config already installed!\"; \
+        elif [ -e \"$KIT_PATH/$COMMAND.sh\" ]; then \
+            bash \"$KIT_PATH/$COMMAND.sh\" \"$@\"; \
+        else \
+            echo \"Enterprise Config command '$COMMAND' not found.\"; \
+        fi \
+    }; f"
 
 
 ###############################################################################
@@ -140,26 +103,3 @@
 ###############################################################################
 [ghfw]
     disableverification = true
-
-
-###############################################################################
-# More helpful diff'ing of one line JSON files
-###############################################################################
-[diff "json"]
-    textconv = "perl -MJSON::PP -e '$j = JSON::PP->new->pretty->canonical; print $j->encode($j->decode(do {$/ = undef; <>}))'"
-    cachetextconv = true
-
-
-###############################################################################
-# Define a merge driver that won't actually merge a file... for those files
-# which must never be merged.
-#
-# Example content of .gitattributes file:
-#     branchinfo.txt merge=ours
-#     /environment-config/* merge=ours
-#
-# Further information:
-#    https://medium.com/@porteneuve/how-to-make-git-preserve-specific-files-while-merging-18c92343826b
-###############################################################################
-[merge "ours"]
-    driver = true

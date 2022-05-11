@@ -1,5 +1,5 @@
 function open_url () {
-	cmd //c start "${@//&/^&}"
+    explorer "$1"
 }
 
 function one_ping () {
@@ -7,42 +7,57 @@ function one_ping () {
 }
 
 function credential_helper () {
-    echo wincred
+    if ( git credential-manager version > /dev/null 2>&1 );then 
+        echo manager
+    else
+        echo wincred
+    fi
 }
 
-function is_admin() {
-    net session > /dev/null 2>&1
-}
-
-function install_git_lfs () {
+function install_git_lfs ()
+{
     local KIT_PATH=$1
     local VERSION=$2
-    export GIT_LFS_INSTALLER_LIB="$KIT_PATH/install-helper.ps1"
-    export GIT_LFS_INSTALLER_URL="https://github.com/git-lfs/git-lfs/releases/download/v$VERSION/git-lfs-windows-$VERSION.exe"
-    export GIT_LFS_INSTALLER_SHA256='f11ee43eae6ae33c258418e6e4ee221eb87d2e98955c498f572efa7b607f9f9b'
 
-    # Previous versions of this installer installed Git LFS into the wrong
-    # directory. The current installer wouldn't update these files. If they
-    # are earlier in the $PATH then Git would always find an outdated Git LFS
-    # binary.
-    rm -f /cmd/git-lfs.exe
+    local GIT_LFS_CHECKSUM=2e095cd4feb5a3ed08a53995976f66ef
+    # Run this to calculate the hash for a new version:
+    # export V="1.1.1"; curl --location https://github.com/github/git-lfs/releases/download/v$V/git-lfs-windows-amd64-$V.zip | md5
 
-    powershell -InputFormat None -ExecutionPolicy Bypass -File "$KIT_PATH/lib/win/install-git-lfs.ps1"
+    # Assigned in fetch_git_lfs
+    local DOWNLOAD_FILE
+    fetch_git_lfs $VERSION git-lfs-windows-amd64-$VERSION.zip $GIT_LFS_CHECKSUM
+
+    echo "Installing Git LFS version $VERSION"
+
+    # If Git LFS was already installed then install it in the same directory.
+    # Otherwise use the Git directory.
+    if has_command git-lfs; then
+        TARGET_DIR=$(dirname $(which git-lfs))
+    else
+        TARGET_DIR=$(dirname $(which git))
+    fi
+
+    # The current Git-LFS installer cannot not be instructed to use a
+    # certain install location. Use PowerShell to elevate the file
+    # system rights and install Git-LFS to a custom location with the
+    # Perl script.
+    script="$KIT_PATH/lib/win/install_git_lfs.pl"
+    file="$KIT_PATH/lib/win/new.ps1"
+    C:/WINDOWS/system32/WindowsPowerShell/v1.0/powershell.exe -executionpolicy bypass -File $file "$script" "$DOWNLOAD_FILE" "$TARGET_DIR"
+
+    # Cleanup
+    rm -f $DOWNLOAD_FILE
+
     check_git_lfs no-install
 }
 
-function install_git () {
-    local USERNAME=$1
-    local TOKEN=$2
 
-    warning 'The upgrade will close all your git-bash windows.'
-    read -n 1 -s -r -p "Press any key to continue"
 
-    INSTALLBAT=$(mktemp -t "git-install-XXXXXXX.bat")
-    cp "$KIT_PATH/install.bat" "$INSTALLBAT"
-
-    # remove the first two arguments from the arguments array so that they
-    # can be re-arranged.
-    shift 2
-    start "" "$INSTALLBAT" -password $TOKEN -username $USERNAME "$@"
-}
+if !(has_command git-lfs) ;then
+    bindir=$(which git)
+    GIT_HOME="$(dirname $(dirname $bindir))"
+    export PATH=$PATH:$GIT_HOME/libexec/git-core
+fi
+export GIT_ASKPASS=$(which git-gui--askpass 2>/dev/null)
+rcfile="$HOME/.bashrc"
+[[ $(credential_helper) == "manager" ]] || grep -q 'GIT_ASKPASS' "$rcfile" || echo "export GIT_ASKPASS=$GIT_ASKPASS" >> "$rcfile" 
